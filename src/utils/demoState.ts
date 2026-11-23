@@ -1,6 +1,16 @@
 import type { AppStatePayload, ControllerControlID } from "../types/models";
 
-export type DemoPreset = "ps" | "ps-mod" | "xbox" | "sheet" | "updater" | "lab" | "radial";
+export type DemoPreset =
+  | "ps"
+  | "ps-mod"
+  | "xbox"
+  | "sheet"
+  | "updater"
+  | "lab"
+  | "lab-gyro"
+  | "lab-fx"
+  | "lab-api"
+  | "radial";
 
 export function getDemoPreset(): DemoPreset | null {
   if (typeof window === "undefined") return null;
@@ -12,6 +22,9 @@ export function getDemoPreset(): DemoPreset | null {
     p === "sheet" ||
     p === "updater" ||
     p === "lab" ||
+    p === "lab-gyro" ||
+    p === "lab-fx" ||
+    p === "lab-api" ||
     p === "radial"
   ) {
     return p;

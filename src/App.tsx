@@ -44,7 +44,12 @@ export const App: React.FC = () => {
   const [editingStick, setEditingStick] = useState<StickSide | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showInstaller, setShowInstaller] = useState(demoPreset === "updater");
-  const [showHardwareLab, setShowHardwareLab] = useState(demoPreset === "lab");
+  const [showHardwareLab, setShowHardwareLab] = useState(
+    demoPreset === "lab" ||
+      demoPreset === "lab-gyro" ||
+      demoPreset === "lab-fx" ||
+      demoPreset === "lab-api"
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const runAction = async (fn: () => Promise<AppStatePayload>) => {
@@ -451,6 +456,15 @@ export const App: React.FC = () => {
       {showHardwareLab && (
         <HardwareLabModal
           snapshot={snapshot}
+          initialTab={
+            demoPreset === "lab-gyro"
+              ? "gyro"
+              : demoPreset === "lab-fx"
+              ? "fx"
+              : demoPreset === "lab-api"
+              ? "api"
+              : "calibration"
+          }
           gyro={
             activeProfile.gyro ?? {
               enabled: false,

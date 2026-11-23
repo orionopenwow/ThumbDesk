@@ -332,6 +332,24 @@ export const MappingSheet: React.FC<MappingSheetProps> = ({
                   outline: "none",
                 }}
               />
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[
+                  { label: "Terminal", cmd: "wt.exe" },
+                  { label: "VS Code", cmd: "code ." },
+                  { label: "Lock PC", cmd: "rundll32.exe user32.dll,LockWorkStation" },
+                  { label: "Task Mgr", cmd: "taskmgr.exe" },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    className="btn btn-sm"
+                    style={{ fontSize: 10.5, padding: "3px 8px" }}
+                    onClick={() => setDraft((prev) => ({ ...prev, commandScript: preset.cmd }))}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
               <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
                 Runs silently via Windows <code>cmd /C</code> without flashing a console window.
               </div>
