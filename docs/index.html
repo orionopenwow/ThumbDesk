@@ -117,9 +117,35 @@
       margin-bottom: 26px;
     }
     .hero-cta {
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-      margin-bottom: 24px;
+      display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+      margin-bottom: 14px;
     }
+    .os-installers {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-bottom: 14px;
+      max-width: 540px;
+    }
+    .os-btn {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 13px; border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      transition: background 0.14s ease, border-color 0.14s ease, transform 0.12s ease;
+    }
+    .os-btn:hover {
+      background: #181f2c;
+      border-color: rgba(125, 211, 252, 0.45);
+      transform: translateY(-1px);
+    }
+    .os-btn.primary {
+      background: linear-gradient(180deg, rgba(59,130,246,0.22), rgba(37,99,235,0.14));
+      border-color: rgba(96, 165, 250, 0.55);
+    }
+    .os-btn-text { display: flex; flex-direction: column; line-height: 1.25; }
+    .os-btn-name { font-size: 13px; font-weight: 600; color: var(--text); }
+    .os-btn-ext { font-family: var(--mono); font-size: 10px; color: var(--muted); }
     .hero-meta {
       display: flex; flex-wrap: wrap; gap: 18px;
       font-family: var(--mono); font-size: 11px; color: var(--dim);
@@ -316,32 +342,61 @@
         <div>
           <div class="hero-kicker">
             <span class="hero-kicker-dot"></span>
-            v2.0.0 · NATIVE WINDOWS 10 / 11 X64 · ZERO DRIVERS
+            v2.0.0 · WINDOWS · MACOS · LINUX · ZERO DRIVERS
           </div>
-          <h1>Your game controller, engineered for the Windows desktop.</h1>
+          <h1>Use your Xbox or PlayStation controller as your mouse, keyboard, and command deck.</h1>
           <p class="hero-sub">
-            <strong>thumbdesk.</strong> turns any Xbox or PlayStation controller into a 120 Hz desktop studio —
-            dual-stick precision cursor, 6-axis gyro mouse, DualSense adaptive triggers, 8-slice radial wheel,
-            offline voice command scripts, and automatic anti-cheat &amp; Steam game compliance in one portable <code>.exe</code>.
+            Move the cursor at 120 Hz, click, scroll, snap windows, run any shell script by button or offline voice,
+            and automatically pause whenever Riot Vanguard, EAC, BattlEye, or a Steam game launches.
           </p>
-          <div class="hero-cta">
-            <a class="btn btn-lg btn-primary" href="https://github.com/orionopenwow/ThumbDesk/releases/latest" target="_blank" rel="noopener">
-              Download v2.0.0 (.exe)
+
+          <div class="os-installers" aria-label="Platform installers">
+            <a class="os-btn primary" href="https://github.com/orionopenwow/ThumbDesk/releases/latest" target="_blank" rel="noopener">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#60a5fa" aria-hidden="true">
+                <path d="M3 4.5L11.2 3.3V11.3H3V4.5ZM12.3 3.1L21 2V11.3H12.3V3.1ZM3 12.4H11.2V20.6L3 19.4V12.4ZM12.3 12.4H21V22L12.3 20.8V12.4Z"/>
+              </svg>
+              <span class="os-btn-text">
+                <span class="os-btn-name">Windows</span>
+                <span class="os-btn-ext">.exe / .zip</span>
+              </span>
             </a>
-            <a class="btn btn-lg btn-star" href="https://github.com/orionopenwow/ThumbDesk" target="_blank" rel="noopener">
+            <a class="os-btn" href="https://github.com/orionopenwow/ThumbDesk/releases/latest" target="_blank" rel="noopener" title="macOS .dmg installer or curl install-macos.sh">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="#e2e8f0" aria-hidden="true">
+                <path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z"/>
+              </svg>
+              <span class="os-btn-text">
+                <span class="os-btn-name">macOS</span>
+                <span class="os-btn-ext">.dmg Universal</span>
+              </span>
+            </a>
+            <a class="os-btn" href="https://github.com/orionopenwow/ThumbDesk/releases/latest" target="_blank" rel="noopener" title="Linux .AppImage / .deb installer">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="3"/>
+                <polyline points="8 10 11 13 8 16"/>
+                <line x1="13" y1="16" x2="16" y2="16"/>
+              </svg>
+              <span class="os-btn-text">
+                <span class="os-btn-name">Linux</span>
+                <span class="os-btn-ext">.AppImage / .deb</span>
+              </span>
+            </a>
+          </div>
+
+          <div class="hero-cta">
+            <a class="btn btn-star" href="https://github.com/orionopenwow/ThumbDesk" target="_blank" rel="noopener">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="#fbbf24" stroke="#fbbf24" stroke-width="1.6">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
               <span>Star on GitHub</span>
               <span class="star-count" id="starCountHero">★</span>
             </a>
-            <a class="btn btn-lg btn-ghost" href="#interactive-app">
+            <a class="btn btn-ghost" href="#interactive-app">
               Try Live UI ↓
             </a>
           </div>
           <div class="hero-meta">
-            <span><b>13.7 MB</b> Portable .exe</span>
-            <span><b>Rust + Win32</b> SendInput</span>
+            <span><b>13.7 MB</b> Portable Binary</span>
+            <span><b>120 Hz</b> Dual-Stick + Gyro</span>
             <span><b>SHA-256</b> Auto-Updater</span>
             <span><b>MIT</b> Open Source</span>
           </div>

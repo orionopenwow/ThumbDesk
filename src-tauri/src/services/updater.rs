@@ -1,5 +1,6 @@
 use std::fs;
 use std::io::{Read, Write};
+#[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -13,6 +14,7 @@ use sha2::{Digest, Sha256};
 pub const GITHUB_LATEST_RELEASE_URL: &str =
     "https://api.github.com/repos/orionopenwow/ThumbDesk/releases/latest";
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
+#[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -432,11 +434,19 @@ impl AppUpdateService {
         fs::write(&script_path, script)
             .map_err(|e| format!("Failed to write update helper: {}", e))?;
 
-        Command::new("cmd")
-            .args(["/C", &script_path.to_string_lossy()])
-            .creation_flags(CREATE_NO_WINDOW)
-            .spawn()
-            .map_err(|e| format!("Failed to launch update helper: {}", e))?;
+        #[cfg(target_os = "windows")]
+        {
+            Command::new("cmd")
+                .args(["/C", &script_path.to_string_lossy()])
+                .creation_flags(CREATE_NO_WINDOW)
+                .spawn()
+                .map_err(|e| format!("Failed to launch update helper: {}", e))?;
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let _ = script_path;
+            return Err("Automatic in-place restart is supported on Windows; download the latest macOS/Linux installer from GitHub Releases.".into());
+        }
 
         Ok(())
     }

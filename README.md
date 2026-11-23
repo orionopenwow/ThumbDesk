@@ -38,9 +38,16 @@ Built natively in **Rust + Tauri v2 (Win32 `SendInput`, XInput, Direct USB/BT HI
 
 ## Download & Quick Start
 
-1. Download **`ThumbDesk.exe`** (standalone) or **`ThumbDesk-Windows-x64.zip`** from the [Latest Release](https://github.com/orionopenwow/ThumbDesk/releases/latest).
-2. Plug in or pair an **Xbox** (360 / One / Series X|S) or **PlayStation** (DualSense / DualShock 4, USB or Bluetooth) controller.
-3. Launch **`ThumbDesk.exe`** — your controller is detected automatically, the 3D studio layout adapts to your hardware, and you're ready to go.
+- **Windows (10/11 x64)**: Download **`ThumbDesk.exe`** (standalone) or **`ThumbDesk-Windows-x64.zip`** from the [Latest Release](https://github.com/orionopenwow/ThumbDesk/releases/latest).
+- **macOS (`.dmg`)**: Download the `.dmg` from Releases, or run:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/orionopenwow/ThumbDesk/main/installers/install-macos.sh | bash
+  ```
+- **Linux (`.AppImage` / `.deb`)**: Download from Releases, or run:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/orionopenwow/ThumbDesk/main/installers/install-linux.sh | bash
+  ```
+- Plug in or pair an **Xbox** (360 / One / Series X|S) or **PlayStation** (DualSense / DualShock 4, USB or Bluetooth) controller and launch **ThumbDesk**.
 
 > **Auto-Updates Built In**: Whenever a newer GitHub Release is published, `thumbdesk.` quietly preloads it in the background, verifies its SHA-256 checksum against `SHA256SUMS.txt`, and lets you click **Restart to Update** from the custom studio installer.
 

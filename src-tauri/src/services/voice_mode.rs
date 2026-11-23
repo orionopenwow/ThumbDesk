@@ -1,4 +1,5 @@
 use std::io::{BufRead, BufReader};
+#[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
@@ -6,6 +7,7 @@ use std::thread;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -72,11 +74,21 @@ pub fn execute_command_script(script: &str) -> Result<(), String> {
     if trimmed.is_empty() {
         return Err("Command script is empty".to_string());
     }
-    Command::new("cmd")
-        .args(["/C", trimmed])
-        .creation_flags(CREATE_NO_WINDOW)
-        .spawn()
-        .map_err(|e| format!("Failed to launch command: {}", e))?;
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", trimmed])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Failed to launch command: {}", e))?;
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Command::new("sh")
+            .args(["-c", trimmed])
+            .spawn()
+            .map_err(|e| format!("Failed to launch command: {}", e))?;
+    }
     Ok(())
 }
 
@@ -197,12 +209,15 @@ impl VoiceModeService {
             choices = choices_ps
         );
 
-        let spawned = Command::new("powershell")
-            .args(["-NoProfile", "-Command", &ps_script])
+        let mut cmd = Command::new("powershell");
+        cmd.args(["-NoProfile", "-Command", &ps_script])
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .creation_flags(CREATE_NO_WINDOW)
-            .spawn();
+            .stderr(Stdio::null());
+        #[cfg(target_os = "windows")]
+        {
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+        let spawned = cmd.spawn();
 
         match spawned {
             Ok(mut child) => {

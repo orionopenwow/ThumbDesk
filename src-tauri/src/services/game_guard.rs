@@ -1,3 +1,4 @@
+#[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
 use std::process::Command;
 
@@ -5,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::platform::active_app::RunningAppInfo;
 
+#[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 pub const ANTI_CHEAT_PROCESSES: &[(&str, &str)] = &[
@@ -137,10 +139,27 @@ pub fn evaluate_game_guard(
 }
 
 pub fn open_steam_uri(uri: &str) -> Result<(), String> {
-    Command::new("cmd")
-        .args(["/C", "start", "", uri])
-        .creation_flags(CREATE_NO_WINDOW)
-        .spawn()
-        .map_err(|e| format!("Failed to open Steam URI: {}", e))?;
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", "start", "", uri])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Failed to open Steam URI: {}", e))?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(uri)
+            .spawn()
+            .map_err(|e| format!("Failed to open Steam URI: {}", e))?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(uri)
+            .spawn()
+            .map_err(|e| format!("Failed to open Steam URI: {}", e))?;
+    }
     Ok(())
 }
