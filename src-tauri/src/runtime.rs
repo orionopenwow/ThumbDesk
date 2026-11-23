@@ -352,8 +352,8 @@ impl AppRuntime {
                     last_tick = now_inst;
                     let now_secs = now_inst.duration_since(start_epoch).as_secs_f64();
 
-                    // Poll active foreground app + Game Guard every 400ms
-                    if now_inst.duration_since(last_app_check) >= Duration::from_millis(400) {
+                    // Poll active foreground app + Game Guard every 750ms
+                    if now_inst.duration_since(last_app_check) >= Duration::from_millis(750) {
                         last_app_check = now_inst;
                         let fg = frontmost_application();
                         let running_apps = crate::platform::active_app::list_running_apps();
@@ -385,8 +385,8 @@ impl AppRuntime {
                         guard.snapshot = snapshot.clone();
                         let guard_suspended = guard.game_guard_status.is_suspended;
                         let enabled = guard.runtime_enabled && !guard_suspended;
-                        let profile = Self::active_profile_from_doc(&guard.document).clone();
-                        let active_app = guard.diagnostics.active_app_id.clone();
+                        let cursor_cfg = Self::active_profile_from_doc(&guard.document).cursor.clone();
+                        let gyro_cfg = Self::active_profile_from_doc(&guard.document).gyro;
 
                         // Drop companion routing if disconnected
                         if guard.is_routing_to_companion && !rt.companion.state().is_connected() {
@@ -397,11 +397,13 @@ impl AppRuntime {
                         if decision.emit_realtime {
                             guard
                                 .cursor_motion
-                                .update_input(&snapshot, &profile.cursor, now_secs);
+                                .update_input(&snapshot, &cursor_cfg, now_secs);
                         }
 
-                        // Actions
+                        // Actions (only clone full profile when discrete action state actually changed)
                         if decision.emit_action {
+                            let profile = Self::active_profile_from_doc(&guard.document).clone();
+                            let active_app = guard.diagnostics.active_app_id.clone();
                             let routing = guard.is_routing_to_companion;
                             let state_ref = &mut *guard;
                             let mut sink = LiveActionSink {
@@ -427,7 +429,7 @@ impl AppRuntime {
 
                         // Zoom gesture check
                         let zoom_enabled = enabled
-                            && profile.cursor.zoom_gesture_enabled
+                            && cursor_cfg.zoom_gesture_enabled
                             && snapshot
                                 .pressed_controls
                                 .contains(&ControllerControlID::ButtonSouth);
@@ -459,13 +461,13 @@ impl AppRuntime {
                         } else {
                             guard.cursor_motion.tick(
                                 &snapshot,
-                                &profile.cursor,
+                                &cursor_cfg,
                                 dt,
                                 suppress_left,
                             )
                         };
                         let gyro_delta = if enabled {
-                            guard.gyro_engine.tick(&snapshot, &profile.gyro, dt)
+                            guard.gyro_engine.tick(&snapshot, &gyro_cfg, dt)
                         } else {
                             None
                         };

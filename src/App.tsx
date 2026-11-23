@@ -84,6 +84,30 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // Global Escape key closes open overlays for effortless keyboard navigation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (showProfileMenu) {
+        setShowProfileMenu(false);
+      } else if (showHardwareLab) {
+        setShowHardwareLab(false);
+      } else if (showInstaller) {
+        setShowInstaller(false);
+      } else if (editingStick) {
+        setEditingStick(null);
+      } else if (state?.radialMenuOpen) {
+        if (isTauriEnv()) {
+          runAction(() => backend.setRadialMenuOpen(false));
+        } else {
+          setState((prev) => (prev ? { ...prev, radialMenuOpen: false } : prev));
+        }
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showProfileMenu, showHardwareLab, showInstaller, editingStick, state?.radialMenuOpen]);
+
   if (!state) {
     return (
       <div

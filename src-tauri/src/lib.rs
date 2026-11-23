@@ -1132,4 +1132,52 @@ mod wave4_tests {
         let (code404, _) = handle_http_request("GET /api/nope HTTP/1.1\r\n\r\n", &rt);
         assert_eq!(code404, "404 Not Found");
     }
+
+    #[test]
+    fn perf_10000_ticks_under_frame_budget() {
+        use std::time::Instant;
+        use crate::engines::cursor_math::CursorMotionState;
+        use crate::engines::gyro_engine::{GyroActivationMode, GyroConfiguration, GyroEngine};
+        use crate::models::control::{ControllerSnapshot, StickSnapshot};
+        use crate::models::profile::CursorConfiguration;
+
+        let mut motion = CursorMotionState::new();
+        let mut gyro = GyroEngine::default();
+        let cursor_cfg = CursorConfiguration::default();
+        let gyro_cfg = GyroConfiguration {
+            enabled: true,
+            activation_mode: GyroActivationMode::Always,
+            ..Default::default()
+        };
+        let mut snap = ControllerSnapshot {
+            is_connected: true,
+            has_gyro: true,
+            touchpad_touched: true,
+            ..Default::default()
+        };
+
+        let start = Instant::now();
+        let mut moved_ticks = 0u32;
+        for i in 0..10_000u32 {
+            let phase = (i as f64) * 0.01;
+            snap.left_stick = StickSnapshot {
+                x: phase.sin(),
+                y: phase.cos(),
+                pressed: false,
+            };
+            snap.gyro = [(phase.cos() * 0.3) as f32, (phase.sin() * 0.3) as f32, 0.0];
+            motion.update_input(&snap, &cursor_cfg, phase);
+            if motion.tick(&snap, &cursor_cfg, 1.0 / 120.0, false).is_some() {
+                moved_ticks += 1;
+            }
+            let _ = gyro.tick(&snap, &gyro_cfg, 1.0 / 120.0);
+        }
+        let elapsed = start.elapsed();
+        assert!(moved_ticks > 9000);
+        assert!(
+            elapsed.as_millis() < 250,
+            "10,000 real-time ticks took {:?} (exceeded 250ms budget)",
+            elapsed
+        );
+    }
 }

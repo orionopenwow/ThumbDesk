@@ -384,11 +384,12 @@ export const browserSim = {
     return cloneState();
   },
 
-  /** Live Web Gamepad API telemetry loop so real plugged-in controllers animate the website UI! */
+  /** Live Web Gamepad API telemetry loop with change-detection so idle controllers cause zero React re-renders! */
   onTelemetry: async (cb: (snapshot: ControllerSnapshot) => void): Promise<() => void> => {
     let rafId = 0;
     let events = 142;
     let active = true;
+    let lastFingerprint = "";
 
     const tick = () => {
       if (!active) return;
@@ -396,11 +397,10 @@ export const browserSim = {
         const pads = navigator.getGamepads();
         const gp = pads.find((p) => p && p.connected);
         if (gp) {
-          const lower = gp.id.toLowerCase();
-          const family: ControllerFamily =
-            lower.includes("dualsense") || lower.includes("dualshock") || lower.includes("054c") || lower.includes("wireless controller")
-              ? "playStation"
-              : "xbox";
+          const lx = gp.axes[0] ?? 0;
+          const ly = -(gp.axes[1] ?? 0);
+          const rx = gp.axes[2] ?? 0;
+          const ry = -(gp.axes[3] ?? 0);
           const pressed: ControllerControlID[] = [];
           const analog: Partial<Record<ControllerControlID, number>> = {};
           for (const [idx, ctrl] of STANDARD_BTN_MAP) {
@@ -413,34 +413,35 @@ export const browserSim = {
               pressed.push(ctrl);
             }
           }
-          events += 1;
-          const snap: ControllerSnapshot = {
-            isConnected: true,
-            name: gp.id.split("(")[0].trim() || (family === "playStation" ? "DualSense Controller" : "Xbox Controller"),
-            family,
-            transport: "Web Gamepad API (Live)",
-            batteryLevel: null,
-            leftStick: {
-              x: gp.axes[0] ?? 0,
-              y: -(gp.axes[1] ?? 0),
-              pressed: Boolean(gp.buttons[10]?.pressed),
-            },
-            rightStick: {
-              x: gp.axes[2] ?? 0,
-              y: -(gp.axes[3] ?? 0),
-              pressed: Boolean(gp.buttons[11]?.pressed),
-            },
-            pressedControls: pressed,
-            analogValues: analog,
-            eventCount: events,
-            shareSupported: family === "xbox",
-            hasGyro: family === "playStation",
-            gyro: [0, 0, 0],
-            touchpadTouched: Boolean(gp.buttons[17]?.pressed),
-            pollingRateHz: 120,
-          };
-          if (simState) simState.snapshot = snap;
-          cb(snap);
+          const fp = `${gp.id}|${lx.toFixed(3)},${ly.toFixed(3)},${rx.toFixed(3)},${ry.toFixed(3)}|${pressed.join(",")}`;
+          if (fp !== lastFingerprint) {
+            lastFingerprint = fp;
+            const lower = gp.id.toLowerCase();
+            const family: ControllerFamily =
+              lower.includes("dualsense") || lower.includes("dualshock") || lower.includes("054c") || lower.includes("wireless controller")
+                ? "playStation"
+                : "xbox";
+            events += 1;
+            const snap: ControllerSnapshot = {
+              isConnected: true,
+              name: gp.id.split("(")[0].trim() || (family === "playStation" ? "DualSense Controller" : "Xbox Controller"),
+              family,
+              transport: "Web Gamepad API (Live)",
+              batteryLevel: null,
+              leftStick: { x: lx, y: ly, pressed: Boolean(gp.buttons[10]?.pressed) },
+              rightStick: { x: rx, y: ry, pressed: Boolean(gp.buttons[11]?.pressed) },
+              pressedControls: pressed,
+              analogValues: analog,
+              eventCount: events,
+              shareSupported: family === "xbox",
+              hasGyro: family === "playStation",
+              gyro: [0, 0, 0],
+              touchpadTouched: Boolean(gp.buttons[17]?.pressed),
+              pollingRateHz: 120,
+            };
+            if (simState) simState.snapshot = snap;
+            cb(snap);
+          }
         }
       }
       rafId = window.requestAnimationFrame(tick);
