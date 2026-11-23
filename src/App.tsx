@@ -58,7 +58,6 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isTauriEnv()) return;
     runAction(() => backend.getAppState());
 
     let unlisten: (() => void) | null = null;
@@ -68,13 +67,15 @@ export const App: React.FC = () => {
       unlisten = fn;
     });
 
-    const pollTimer = window.setInterval(() => {
-      backend.getAppState().then(setState).catch(() => {});
-    }, 1000);
+    const pollTimer = isTauriEnv()
+      ? window.setInterval(() => {
+          backend.getAppState().then(setState).catch(() => {});
+        }, 1000)
+      : null;
 
     return () => {
       if (unlisten) unlisten();
-      window.clearInterval(pollTimer);
+      if (pollTimer !== null) window.clearInterval(pollTimer);
     };
   }, []);
 

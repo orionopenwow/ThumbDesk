@@ -186,8 +186,8 @@ export function buildDemoState(preset: DemoPreset): AppStatePayload {
           }
         : {
             phase: "upToDate",
-            currentVersion: "1.2.0",
-            latestVersion: "v1.2.0",
+            currentVersion: "2.0.0",
+            latestVersion: "v2.0.0",
             releaseNotes: null,
             releaseUrl: null,
             downloadedBytes: 0,
@@ -195,7 +195,7 @@ export function buildDemoState(preset: DemoPreset): AppStatePayload {
             percent: 0,
             verifiedSha256: null,
             stagedPath: null,
-            message: "Up to date (v1.2.0)",
+            message: "Up to date (v2.0.0)",
           },
     voiceState: {
       enabled: true,
