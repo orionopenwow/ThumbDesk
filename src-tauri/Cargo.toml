@@ -1,0 +1,36 @@
+[package]
+name = "vibe-controller-windows"
+version = "1.0.0"
+description = "Turn an Xbox or PlayStation game controller into a native Windows desktop input device."
+authors = ["Vibe Controller Windows Port"]
+edition = "2021"
+
+[lib]
+name = "vibe_controller_windows_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "time", "sync", "io-util"] }
+dirs = "5"
+uuid = { version = "1", features = ["v4"] }
+hidapi = { version = "2.6", default-features = false, features = ["windows-native"] }
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Input_XboxController",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_Graphics_Gdi",
+    "Win32_System_Threading",
+    "Win32_System_ProcessStatus",
+    "Win32_Media",
+] }
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thumbdesk. — Native Windows Controller-to-Desktop Studio</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0e1218;
+      --card: #151b24;
+      --border: rgba(255, 255, 255, 0.085);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --cyan: #7dd3fc;
+      --blue: #60a5fa;
+      --indigo: #818cf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(ellipse 75% 50% at 50% 0%, rgba(59, 130, 246, 0.16), transparent 65%), var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 0;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 11px; }
+    .brand img { width: 36px; height: 36px; border-radius: 9px; filter: drop-shadow(0 4px 12px rgba(56,189,248,0.3)); }
+    .wordmark { font-family: "Sora", sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.9px; }
+    .wordmark-desk {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 55%, var(--indigo) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.35));
+    }
+    .nav-links { display: flex; align-items: center; gap: 18px; font-size: 14px; color: var(--muted); }
+    .nav-links a:hover { color: var(--text); }
+    .hero { text-align: center; padding: 52px 0 36px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 999px;
+      background: rgba(59, 130, 246, 0.14); border: 1px solid rgba(96, 165, 250, 0.35);
+      color: #93c5fd; font-size: 12.5px; font-weight: 600; margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-family: "Sora", sans-serif; font-size: clamp(36px, 5vw, 56px);
+      font-weight: 700; letter-spacing: -1.6px; line-height: 1.08; max-width: 780px; margin: 0 auto 18px;
+    }
+    .hero p { font-size: 17px; color: var(--muted); max-width: 620px; margin: 0 auto 30px; }
+    .cta-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 22px; border-radius: 12px; font-weight: 600; font-size: 14.5px;
+      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(180deg, #4f94ff 0%, #3174e8 100%);
+      color: #fff; box-shadow: 0 6px 24px rgba(59, 130, 246, 0.38);
+    }
+    .btn-secondary {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+    }
+    .btn-secondary:hover { background: #1e2634; }
+    .showcase {
+      margin: 44px auto 64px;
+      background: radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.24) 0%, rgba(21, 27, 36, 0.96) 65%);
+      border: 1px solid var(--border); border-radius: 24px;
+      padding: 36px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+    }
+    .showcase-item { text-align: center; }
+    .showcase-item img {
+      width: 100%; max-width: 440px; height: auto;
+      filter: drop-shadow(0 20px 30px rgba(0, 0, 0, 0.55));
+    }
+    .showcase-label {
+      margin-top: 10px; font-family: "JetBrains Mono", monospace;
+      font-size: 12px; color: var(--muted); letter-spacing: 0.6px;
+    }
+    .features {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px; margin-bottom: 64px;
+    }
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 22px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #f8fafc; }
+    .card p { font-size: 13.5px; color: var(--muted); }
+    footer {
+      border-top: 1px solid var(--border); padding: 28px 0 42px;
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+      color: var(--muted); font-size: 13px;
+    }
+    @media (max-width: 760px) { .showcase { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="brand" href="#">
+        <img src="assets/logo.png" alt="thumbdesk." />
+        <span class="wordmark">thumb<span class="wordmark-desk">desk.</span></span>
+      </a>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="https://github.com/orionopenwow/ThumbDesk/releases/latest">Releases</a>
+        <a href="https://github.com/orionopenwow/ThumbDesk">GitHub</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="badge">Native Windows 10/11 · Rust + Win32 + Tauri v2</div>
+      <h1>Control your entire Windows desktop from a game controller.</h1>
+      <p>
+        120 Hz dual-stick cursor physics, modifier layers, per-app sparse overrides, dual-motor haptics,
+        Virtual Desktop switching, and Multi-PC LAN handoff — in a single portable executable.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/orionopenwow/ThumbDesk/releases/latest">
+          Download for Windows (x64)
+        </a>
+        <a class="btn btn-secondary" href="https://github.com/orionopenwow/ThumbDesk">
+          View Source on GitHub
+        </a>
+      </div>
+    </section>
+
+    <section class="showcase">
+      <div class="showcase-item">
+        <img src="assets/ps_studio.png" alt="PlayStation DualSense & DualShock 4" />
+        <div class="showcase-label">DUALSENSE &amp; DUALSHOCK 4 · DIRECT USB &amp; BT HID</div>
+      </div>
+      <div class="showcase-item">
+        <img src="assets/xbox_studio.png" alt="Xbox Series X|S & Xbox 360" />
+        <div class="showcase-label">XBOX 360 / ONE / SERIES X|S · NATIVE XINPUT</div>
+      </div>
+    </section>
+
+    <section id="features" class="features">
+      <div class="card">
+        <h3>120 Hz Precision Cursor Physics</h3>
+        <p>Primary &amp; precision analog sticks with radial deadzone, exponential response curve, flick boost, acceleration, smoothing, and subpixel accumulation via Win32 SendInput.</p>
+      </div>
+      <div class="card">
+        <h3>Dynamic Hardware Detection</h3>
+        <p>Plug in or hot-swap DualSense, DualShock 4, or Xbox controllers and watch the 3D studio controller map, hotspots, labels, and haptics adapt instantly.</p>
+      </div>
+      <div class="card">
+        <h3>Modifier Layers &amp; App Overrides</h3>
+        <p>Hold LB/L1 or RB/R1 for alternate shortcut layers, plus automatic per-app overrides via GetForegroundWindow and a built-in Codex / ChatGPT starter.</p>
+      </div>
+      <div class="card">
+        <h3>7 Tactile Haptic Patterns</h3>
+        <p>Dual-motor rumble with left/right handle locality routing, strength scaling, grab-and-release drag feedback, and connection pulses.</p>
+      </div>
+      <div class="card">
+        <h3>Multi-PC LAN Companion Mode</h3>
+        <p>Seamlessly push your cursor across a screen edge to another Windows PC over LAN TCP/UDP with zero cloud dependencies.</p>
+      </div>
+      <div class="card">
+        <h3>Portable &amp; macOS Profile Ready</h3>
+        <p>Zero-install single .exe with atomic JSON profiles and automatic import conversion for macOS Vibe Controller GAPE.json profiles.</p>
+      </div>
+    </section>
+
+    <footer>
+      <span><strong>thumbdesk.</strong> · Built by orionopenwow · MIT License</span>
+      <span>Inspired by <a href="https://github.com/ggaabe/vibe-controller" style="color:#60a5fa;">ggaabe/vibe-controller</a></span>
+    </footer>
+  </div>
+</body>
+</html>

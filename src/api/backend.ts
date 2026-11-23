@@ -1,0 +1,90 @@
+import { invoke } from "@tauri-apps/api/core";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import type {
+  AppStatePayload,
+  CompanionEdge,
+  CompanionMode,
+  ControllerActionMapping,
+  ControllerControlID,
+  ControllerSnapshot,
+  ControllerVibration,
+  CursorConfiguration,
+  HapticsPreferences,
+  RunningAppInfo,
+  StickRoleChoice,
+  StickSide,
+} from "../types/models";
+
+export function isTauriEnv(): boolean {
+  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+
+export const backend = {
+  getAppState: () => invoke<AppStatePayload>("get_app_state"),
+  setRuntimeEnabled: (enabled: boolean) =>
+    invoke<AppStatePayload>("set_runtime_enabled", { enabled }),
+  selectProfile: (profileId: string) =>
+    invoke<AppStatePayload>("select_profile", { profileId }),
+  updateCursorConfig: (config: CursorConfiguration) =>
+    invoke<AppStatePayload>("update_cursor_config", { config }),
+  assignStickRole: (side: StickSide, role: StickRoleChoice) =>
+    invoke<AppStatePayload>("assign_stick_role", { side, role }),
+  saveMapping: (
+    control: ControllerControlID,
+    modifierControl: ControllerControlID | null,
+    appBundleId: string | null,
+    mapping: ControllerActionMapping
+  ) =>
+    invoke<AppStatePayload>("save_mapping", {
+      control,
+      modifierControl,
+      appBundleId,
+      mapping,
+    }),
+  clearMappingOverride: (
+    control: ControllerControlID,
+    modifierControl: ControllerControlID | null,
+    appBundleId: string | null
+  ) =>
+    invoke<AppStatePayload>("clear_mapping_override", {
+      control,
+      modifierControl,
+      appBundleId,
+    }),
+  addModifierLayer: (modifierControl: ControllerControlID) =>
+    invoke<AppStatePayload>("add_modifier_layer", { modifierControl }),
+  removeModifierLayer: (modifierControl: ControllerControlID) =>
+    invoke<AppStatePayload>("remove_modifier_layer", { modifierControl }),
+  listRunningApps: () => invoke<RunningAppInfo[]>("list_running_apps"),
+  addAppScope: (bundleIdentifier: string, displayName: string) =>
+    invoke<AppStatePayload>("add_app_scope", { bundleIdentifier, displayName }),
+  installCodexStarter: () => invoke<AppStatePayload>("install_codex_starter"),
+  resetAppScope: (bundleIdentifier: string) =>
+    invoke<AppStatePayload>("reset_app_scope", { bundleIdentifier }),
+  removeAppScope: (bundleIdentifier: string) =>
+    invoke<AppStatePayload>("remove_app_scope", { bundleIdentifier }),
+  setHapticsPreferences: (prefs: HapticsPreferences) =>
+    invoke<AppStatePayload>("set_haptics_preferences", { prefs }),
+  previewVibration: (pattern: ControllerVibration) =>
+    invoke<void>("preview_vibration", { pattern }),
+  applySuggestedVibrations: () =>
+    invoke<AppStatePayload>("apply_suggested_vibrations"),
+  setCompanionMode: (mode: CompanionMode) =>
+    invoke<AppStatePayload>("set_companion_mode", { mode }),
+  setCompanionEdge: (edge: CompanionEdge) =>
+    invoke<AppStatePayload>("set_companion_edge", { edge }),
+  connectCompanion: (peerId: string | null) =>
+    invoke<AppStatePayload>("connect_companion", { peerId }),
+  disconnectCompanion: () => invoke<AppStatePayload>("disconnect_companion"),
+  forceCompanionHandoff: () => invoke<AppStatePayload>("force_companion_handoff"),
+  returnCompanionLocal: () => invoke<AppStatePayload>("return_companion_local"),
+  triggerDiagnosticSweep: () => invoke<void>("trigger_diagnostic_sweep"),
+  triggerDiagnosticLeftClick: () => invoke<void>("trigger_diagnostic_left_click"),
+  importProfileJson: (rawJson: string) =>
+    invoke<AppStatePayload>("import_profile_json", { rawJson }),
+  exportActiveProfileJson: () => invoke<string>("export_active_profile_json"),
+  resetActiveProfileToDefaults: () =>
+    invoke<AppStatePayload>("reset_active_profile_to_defaults"),
+  onTelemetry: (cb: (snapshot: ControllerSnapshot) => void): Promise<UnlistenFn> =>
+    listen<ControllerSnapshot>("controller-telemetry", (event) => cb(event.payload)),
+};
