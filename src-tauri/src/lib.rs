@@ -1270,4 +1270,24 @@ mod wave4_tests {
         let after_del = svc.delete(&id).unwrap();
         assert!(after_del.is_empty());
     }
+
+    #[test]
+    fn v2_3_touchpad_mouse_and_osk_action() {
+        use crate::engines::touchpad_engine::TouchpadMouseEngine;
+
+        let mut tp = TouchpadMouseEngine::default();
+        // First touch frame anchors position (no jump)
+        assert_eq!(tp.tick(true, 0.50, 0.50, 1.0, true), None);
+        // Glide right & down -> positive relative delta
+        let (dx, dy) = tp.tick(true, 0.55, 0.52, 1.0, true).expect("glide delta");
+        assert!(dx > 50.0 && dy > 20.0);
+        // Huge single-frame finger-swap teleport rejected
+        assert_eq!(tp.tick(true, 0.99, 0.52, 1.0, true), None);
+        // Release resets anchor
+        assert_eq!(tp.tick(false, 0.99, 0.52, 1.0, true), None);
+        assert_eq!(tp.tick(true, 0.10, 0.10, 1.0, true), None);
+
+        let osk = ControllerActionMapping::new(ActionType::OpenOnScreenKeyboard);
+        assert_eq!(osk.summary(), "Open On-Screen Keyboard");
+    }
 }

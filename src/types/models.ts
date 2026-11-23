@@ -80,7 +80,8 @@ export type ActionType =
   | "volumeUp"
   | "volumeDown"
   | "volumeMute"
-  | "openRadialMenu";
+  | "openRadialMenu"
+  | "openOnScreenKeyboard";
 
 export interface ControllerActionMapping {
   actionType: ActionType;
@@ -123,6 +124,7 @@ export interface CursorConfiguration {
   zoomGestureEnabled: boolean;
   magicSelectEnabled?: boolean;
   magicSnapRadius?: number;
+  touchpadMouseEnabled?: boolean;
 }
 
 export type GyroActivationMode =

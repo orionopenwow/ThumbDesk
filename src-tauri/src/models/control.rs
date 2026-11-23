@@ -279,6 +279,8 @@ pub struct ControllerSnapshot {
     #[serde(default)]
     pub touchpad_touched: bool,
     #[serde(default)]
+    pub touchpad_pos: [f32; 2],
+    #[serde(default)]
     pub polling_rate_hz: u32,
 }
 
@@ -299,6 +301,7 @@ impl Default for ControllerSnapshot {
             has_gyro: false,
             gyro: [0.0, 0.0, 0.0],
             touchpad_touched: false,
+            touchpad_pos: [0.5, 0.5],
             polling_rate_hz: 120,
         }
     }

@@ -98,6 +98,9 @@ struct SharedState {
     cursor_motion: CursorMotionState,
     gyro_engine: crate::engines::gyro_engine::GyroEngine,
     magic_select: crate::engines::magic_select_engine::MagicSelectEngine,
+    touchpad_mouse: crate::engines::touchpad_engine::TouchpadMouseEngine,
+    kill_chord_start: Option<f64>,
+    kill_chord_fired: bool,
     action_engine: ActionEngine,
     is_routing_to_companion: bool,
     local_restore_pos: Option<(f64, f64)>,
@@ -246,6 +249,9 @@ impl AppRuntime {
             cursor_motion: CursorMotionState::new(),
             gyro_engine: crate::engines::gyro_engine::GyroEngine::default(),
             magic_select: crate::engines::magic_select_engine::MagicSelectEngine::default(),
+            touchpad_mouse: crate::engines::touchpad_engine::TouchpadMouseEngine::default(),
+            kill_chord_start: None,
+            kill_chord_fired: false,
             action_engine: ActionEngine::new(),
             is_routing_to_companion: false,
             local_restore_pos: None,
@@ -388,6 +394,32 @@ impl AppRuntime {
                     {
                         let mut guard = rt.state.lock().unwrap();
                         guard.snapshot = snapshot.clone();
+
+                        // Hardware Kill-Switch / Quick Toggle Chord: hold Options (Create/Back) + Menu (Start) for 350ms
+                        let kill_chord_held = snapshot
+                            .pressed_controls
+                            .contains(&ControllerControlID::Options)
+                            && snapshot
+                                .pressed_controls
+                                .contains(&ControllerControlID::Menu);
+                        if kill_chord_held {
+                            let started = *guard.kill_chord_start.get_or_insert(now_secs);
+                            if !guard.kill_chord_fired && (now_secs - started) >= 0.35 {
+                                guard.kill_chord_fired = true;
+                                guard.runtime_enabled = !guard.runtime_enabled;
+                                rt.haptics
+                                    .play(ControllerVibration::DoubleTap, VibrationPhase::Press);
+                                guard.diagnostics.last_action_status = if guard.runtime_enabled {
+                                    "Hardware chord: Input Resumed".to_string()
+                                } else {
+                                    "Hardware chord: Input Paused".to_string()
+                                };
+                            }
+                        } else {
+                            guard.kill_chord_start = None;
+                            guard.kill_chord_fired = false;
+                        }
+
                         let guard_suspended = guard.game_guard_status.is_suspended;
                         let enabled = guard.runtime_enabled && !guard_suspended;
                         let cursor_cfg = Self::active_profile_from_doc(&guard.document).cursor.clone();
@@ -476,6 +508,18 @@ impl AppRuntime {
                         } else {
                             None
                         };
+                        let touchpad_delta = if enabled {
+                            guard.touchpad_mouse.tick(
+                                snapshot.touchpad_touched,
+                                snapshot.touchpad_pos[0] as f64,
+                                snapshot.touchpad_pos[1] as f64,
+                                1.0,
+                                cursor_cfg.touchpad_mouse_enabled,
+                            )
+                        } else {
+                            guard.touchpad_mouse.reset();
+                            None
+                        };
 
                         // Magic Select: free stick move -> snap on release, or small-touch quick flick -> jump to next UI target
                         let magic_stick = match cursor_cfg.primary_stick {
@@ -526,12 +570,15 @@ impl AppRuntime {
                                 };
                             }
                         }
-                        let combined_delta = match (stick_delta, gyro_delta) {
-                            (Some((sx, sy)), Some((gx, gy))) => Some((sx + gx, sy + gy)),
-                            (Some(s), None) => Some(s),
-                            (None, Some(g)) => Some(g),
-                            (None, None) => None,
-                        };
+                        let mut total_dx = 0.0;
+                        let mut total_dy = 0.0;
+                        let mut any_move = false;
+                        for delta in [stick_delta, gyro_delta, touchpad_delta].into_iter().flatten() {
+                            total_dx += delta.0;
+                            total_dy += delta.1;
+                            any_move = true;
+                        }
+                        let combined_delta = if any_move { Some((total_dx, total_dy)) } else { None };
 
                         if !enabled {
                             guard.diagnostics.cursor_state = "disabled".to_string();

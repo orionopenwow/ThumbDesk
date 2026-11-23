@@ -144,6 +144,19 @@ pub fn parse_dualsense_report(data: &[u8], event_count: u64) -> Option<Controlle
         [0.0, 0.0, 0.0]
     };
     let touchpad_touched = data.len() > offset + 32 && (data[offset + 32] & 0x80) == 0;
+    let touchpad_pos = if touchpad_touched && data.len() >= offset + 36 {
+        let b0 = data[offset + 33] as u32;
+        let b1 = data[offset + 34] as u32;
+        let b2 = data[offset + 35] as u32;
+        let tx = ((b1 & 0x0F) << 8) | b0;
+        let ty = (b2 << 4) | ((b1 & 0xF0) >> 4);
+        [
+            (tx as f32 / 1920.0).clamp(0.0, 1.0),
+            (ty as f32 / 1080.0).clamp(0.0, 1.0),
+        ]
+    } else {
+        [0.5, 0.5]
+    };
 
     Some(ControllerSnapshot {
         is_connected: true,
@@ -168,6 +181,7 @@ pub fn parse_dualsense_report(data: &[u8], event_count: u64) -> Option<Controlle
         has_gyro,
         gyro,
         touchpad_touched,
+        touchpad_pos,
         polling_rate_hz: if is_bt { 500 } else { 250 },
     })
 }

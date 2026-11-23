@@ -107,6 +107,7 @@ export const ACTION_TYPE_OPTIONS: { value: ActionType; label: string }[] = [
   { value: "runCommand", label: "Run Command / Script" },
   { value: "toggleVoiceMode", label: "Toggle Voice Mode" },
   { value: "openRadialMenu", label: "Open Radial Pie Menu" },
+  { value: "openOnScreenKeyboard", label: "Open On-Screen Keyboard" },
   { value: "windowSnapLeft", label: "Window Snap Left" },
   { value: "windowSnapRight", label: "Window Snap Right" },
   { value: "windowMaximize", label: "Window Maximize" },
@@ -151,6 +152,7 @@ export function supportedTriggerModesForAction(actionType: ActionType): TriggerM
     case "runCommand":
     case "toggleVoiceMode":
     case "openRadialMenu":
+    case "openOnScreenKeyboard":
     case "windowSnapLeft":
     case "windowSnapRight":
     case "windowMaximize":

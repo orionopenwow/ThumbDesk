@@ -513,6 +513,17 @@ impl ActionEngine {
             }
             ActionType::ToggleVoiceMode => sink.toggle_voice_mode(),
             ActionType::OpenRadialMenu => sink.toggle_radial_menu(),
+            ActionType::OpenOnScreenKeyboard => {
+                // Launches Windows native On-Screen Keyboard (Ctrl+Win+O)
+                let sc = ShortcutDescriptor::new(
+                    0x4F,
+                    vec![
+                        crate::models::shortcut::KeyboardModifier::Control,
+                        crate::models::shortcut::KeyboardModifier::Win,
+                    ],
+                );
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
             ActionType::WindowSnapLeft => {
                 let sc = ShortcutDescriptor::new(0x25, vec![crate::models::shortcut::KeyboardModifier::Win]);
                 sink.shortcut(&sc, CompanionShortcutPhase::Tap);

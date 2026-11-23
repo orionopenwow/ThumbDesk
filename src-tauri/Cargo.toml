@@ -1,6 +1,6 @@
 [package]
 name = "vibe-controller-windows"
-version = "2.2.0"
+version = "2.3.0"
 description = "Turn any Xbox or PlayStation controller into a native 120 Hz Windows desktop input studio."
 authors = ["orionopenwow"]
 edition = "2021"

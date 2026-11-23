@@ -90,6 +90,7 @@ pub enum ActionType {
     VolumeDown,
     VolumeMute,
     OpenRadialMenu,
+    OpenOnScreenKeyboard,
 }
 
 impl ActionType {
@@ -127,6 +128,7 @@ impl ActionType {
             Self::VolumeDown => "Volume Down",
             Self::VolumeMute => "Volume Mute",
             Self::OpenRadialMenu => "Open Radial Pie Menu",
+            Self::OpenOnScreenKeyboard => "Open On-Screen Keyboard",
         }
     }
 
@@ -159,7 +161,8 @@ impl ActionType {
             | Self::MediaNext
             | Self::MediaPrev
             | Self::VolumeMute
-            | Self::OpenRadialMenu => &[TriggerMode::Tap],
+            | Self::OpenRadialMenu
+            | Self::OpenOnScreenKeyboard => &[TriggerMode::Tap],
             Self::VolumeUp | Self::VolumeDown => &[TriggerMode::Tap, TriggerMode::RepeatWhileHeld],
             Self::KeyboardShortcut => &[
                 TriggerMode::Tap,
@@ -435,6 +438,8 @@ pub struct CursorConfiguration {
     pub magic_select_enabled: bool,
     #[serde(default = "default_magic_snap_radius")]
     pub magic_snap_radius: f64,
+    #[serde(default = "default_true")]
+    pub touchpad_mouse_enabled: bool,
 }
 
 impl Default for CursorConfiguration {
@@ -458,6 +463,7 @@ impl Default for CursorConfiguration {
             zoom_gesture_enabled: false,
             magic_select_enabled: true,
             magic_snap_radius: default_magic_snap_radius(),
+            touchpad_mouse_enabled: true,
         }
     }
 }

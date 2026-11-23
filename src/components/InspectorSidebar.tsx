@@ -124,6 +124,34 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
           </button>
         </div>
 
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5, marginBottom: 2 }}>
+          {[
+            {
+              label: "Smooth",
+              cfg: { primarySpeed: 1920, precisionSpeed: 520, deadZone: 0.12, responseCurve: 1.8, smoothing: 0.45 },
+            },
+            {
+              label: "Precision",
+              cfg: { primarySpeed: 1440, precisionSpeed: 380, deadZone: 0.1, responseCurve: 2.0, smoothing: 0.55 },
+            },
+            {
+              label: "Fast",
+              cfg: { primarySpeed: 2880, precisionSpeed: 760, deadZone: 0.11, responseCurve: 1.55, smoothing: 0.2 },
+            },
+          ].map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              className="btn btn-sm"
+              style={{ fontSize: 10.5, padding: "4px 6px", justifyContent: "center" }}
+              onClick={() => patchCursor(preset.cfg)}
+              title={`Apply ${preset.label} cursor feel preset`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
         <StudioSlider
           label="Primary speed"
           valueLabel={`${(cursor.primarySpeed / 1600).toFixed(1)}x`}
@@ -173,6 +201,30 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
             }
             aria-label="Toggle Magic Select"
           />
+        </div>
+
+        <div
+          className="switch-row"
+          title="Glide your thumb across a DualSense or DS4 touchpad like a laptop trackpad."
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 500, color: "#e2e8f0" }}>Touchpad mouse</span>
+            <span style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>
+              DualSense trackpad glide
+            </span>
+          </div>
+          <button
+            type="button"
+            className={`toggle-switch ${(cursor.touchpadMouseEnabled ?? true) ? "on" : ""}`}
+            onClick={() =>
+              patchCursor({ touchpadMouseEnabled: !(cursor.touchpadMouseEnabled ?? true) })
+            }
+            aria-label="Toggle Touchpad Mouse"
+          />
+        </div>
+
+        <div style={{ fontSize: 10.5, fontFamily: "var(--font-mono)", color: "var(--text-tertiary)" }}>
+          Kill-switch: hold Create + Options
         </div>
 
         {showFineTuning && (

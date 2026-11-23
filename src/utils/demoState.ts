@@ -69,6 +69,7 @@ export function buildDemoState(preset: DemoPreset): AppStatePayload {
             zoomGestureEnabled: true,
             magicSelectEnabled: true,
             magicSnapRadius: 76,
+            touchpadMouseEnabled: true,
           },
           gyro: {
             enabled: true,
@@ -201,8 +202,8 @@ export function buildDemoState(preset: DemoPreset): AppStatePayload {
           }
         : {
             phase: "upToDate",
-            currentVersion: "2.2.0",
-            latestVersion: "v2.2.0",
+            currentVersion: "2.3.0",
+            latestVersion: "v2.3.0",
             releaseNotes: null,
             releaseUrl: null,
             downloadedBytes: 0,
@@ -210,7 +211,7 @@ export function buildDemoState(preset: DemoPreset): AppStatePayload {
             percent: 0,
             verifiedSha256: null,
             stagedPath: null,
-            message: "Up to date (v2.2.0)",
+            message: "Up to date (v2.3.0)",
           },
     voiceState: {
       enabled: true,
