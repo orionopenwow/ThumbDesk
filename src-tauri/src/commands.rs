@@ -247,3 +247,37 @@ pub fn open_steam_controller_settings(runtime: SharedRuntime<'_>) -> Result<(), 
 pub fn open_steam_big_picture(runtime: SharedRuntime<'_>) -> Result<(), String> {
     runtime.open_steam_big_picture()
 }
+
+#[tauri::command]
+pub fn update_gyro_config(
+    gyro: crate::engines::gyro_engine::GyroConfiguration,
+    runtime: SharedRuntime<'_>,
+) -> Result<AppStatePayload, String> {
+    runtime.update_gyro_config(gyro)
+}
+
+#[tauri::command]
+pub fn set_hardware_fx(
+    fx: crate::models::hardware_fx::HardwareFxPreferences,
+    runtime: SharedRuntime<'_>,
+) -> AppStatePayload {
+    runtime.set_hardware_fx(fx)
+}
+
+#[tauri::command]
+pub fn update_radial_menu(
+    slices: Vec<crate::models::profile::RadialMenuSlice>,
+    runtime: SharedRuntime<'_>,
+) -> Result<AppStatePayload, String> {
+    runtime.update_radial_menu(slices)
+}
+
+#[tauri::command]
+pub fn set_radial_menu_open(open: bool, runtime: SharedRuntime<'_>) -> AppStatePayload {
+    runtime.set_radial_menu_open(open)
+}
+
+#[tauri::command]
+pub fn execute_radial_slice(slice_id: String, runtime: SharedRuntime<'_>) -> AppStatePayload {
+    runtime.execute_radial_slice(slice_id)
+}

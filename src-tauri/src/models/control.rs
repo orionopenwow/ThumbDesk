@@ -272,6 +272,14 @@ pub struct ControllerSnapshot {
     pub analog_values: BTreeMap<ControllerControlID, f64>,
     pub event_count: u64,
     pub share_supported: bool,
+    #[serde(default)]
+    pub has_gyro: bool,
+    #[serde(default)]
+    pub gyro: [f32; 3],
+    #[serde(default)]
+    pub touchpad_touched: bool,
+    #[serde(default)]
+    pub polling_rate_hz: u32,
 }
 
 impl Default for ControllerSnapshot {
@@ -288,6 +296,10 @@ impl Default for ControllerSnapshot {
             analog_values: BTreeMap::new(),
             event_count: 0,
             share_supported: true,
+            has_gyro: false,
+            gyro: [0.0, 0.0, 0.0],
+            touchpad_touched: false,
+            polling_rate_hz: 120,
         }
     }
 }

@@ -10,7 +10,10 @@ import type {
   ControllerVibration,
   CursorConfiguration,
   GameGuardPreferences,
+  GyroConfiguration,
   HapticsPreferences,
+  HardwareFxPreferences,
+  RadialMenuSlice,
   RunningAppInfo,
   StickRoleChoice,
   StickSide,
@@ -101,6 +104,16 @@ export const backend = {
     invoke<AppStatePayload>("set_game_guard_preferences", { prefs }),
   openSteamControllerSettings: () => invoke<void>("open_steam_controller_settings"),
   openSteamBigPicture: () => invoke<void>("open_steam_big_picture"),
+  updateGyroConfig: (gyro: GyroConfiguration) =>
+    invoke<AppStatePayload>("update_gyro_config", { gyro }),
+  setHardwareFx: (fx: HardwareFxPreferences) =>
+    invoke<AppStatePayload>("set_hardware_fx", { fx }),
+  updateRadialMenu: (slices: RadialMenuSlice[]) =>
+    invoke<AppStatePayload>("update_radial_menu", { slices }),
+  setRadialMenuOpen: (open: boolean) =>
+    invoke<AppStatePayload>("set_radial_menu_open", { open }),
+  executeRadialSlice: (sliceId: string) =>
+    invoke<AppStatePayload>("execute_radial_slice", { sliceId }),
   onTelemetry: (cb: (snapshot: ControllerSnapshot) => void): Promise<UnlistenFn> =>
     listen<ControllerSnapshot>("controller-telemetry", (event) => cb(event.payload)),
 };

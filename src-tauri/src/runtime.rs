@@ -85,6 +85,9 @@ pub struct AppStatePayload {
     pub voice_state: VoiceModeState,
     pub game_guard_prefs: GameGuardPreferences,
     pub game_guard_status: GameGuardStatus,
+    pub hardware_fx: crate::models::hardware_fx::HardwareFxPreferences,
+    pub radial_menu_open: bool,
+    pub automation_api_url: String,
 }
 
 struct SharedState {
@@ -93,11 +96,14 @@ struct SharedState {
     diagnostics: RuntimeDiagnostics,
     snapshot: ControllerSnapshot,
     cursor_motion: CursorMotionState,
+    gyro_engine: crate::engines::gyro_engine::GyroEngine,
     action_engine: ActionEngine,
     is_routing_to_companion: bool,
     local_restore_pos: Option<(f64, f64)>,
     game_guard_prefs: GameGuardPreferences,
     game_guard_status: GameGuardStatus,
+    hardware_fx: crate::models::hardware_fx::HardwareFxPreferences,
+    radial_menu_open: bool,
 }
 
 pub struct AppRuntime {
@@ -119,6 +125,7 @@ struct LiveActionSink<'a> {
     scroll_repeater: &'a HeldScrollRepeater,
     voice: &'a VoiceModeService,
     cursor_motion: &'a mut CursorMotionState,
+    radial_menu_open: &'a mut bool,
     last_status: &'a mut String,
 }
 
@@ -177,6 +184,15 @@ impl<'a> ActionSink for LiveActionSink<'a> {
         *self.last_status = st.status_message;
     }
 
+    fn toggle_radial_menu(&mut self) {
+        *self.radial_menu_open = !*self.radial_menu_open;
+        *self.last_status = if *self.radial_menu_open {
+            "Radial Pie Menu opened".to_string()
+        } else {
+            "Radial Pie Menu closed".to_string()
+        };
+    }
+
     fn start_scroll_repeat(
         &mut self,
         control: ControllerControlID,
@@ -226,11 +242,14 @@ impl AppRuntime {
             diagnostics: RuntimeDiagnostics::default(),
             snapshot: ControllerSnapshot::default(),
             cursor_motion: CursorMotionState::new(),
+            gyro_engine: crate::engines::gyro_engine::GyroEngine::default(),
             action_engine: ActionEngine::new(),
             is_routing_to_companion: false,
             local_restore_pos: None,
             game_guard_prefs: GameGuardPreferences::default(),
             game_guard_status: GameGuardStatus::default(),
+            hardware_fx: crate::models::hardware_fx::HardwareFxPreferences::default(),
+            radial_menu_open: false,
         }));
 
         let state_for_companion = Arc::clone(&state);
@@ -392,6 +411,7 @@ impl AppRuntime {
                                 scroll_repeater: &rt.scroll_repeater,
                                 voice: &rt.voice,
                                 cursor_motion: &mut state_ref.cursor_motion,
+                                radial_menu_open: &mut state_ref.radial_menu_open,
                                 last_status: &mut state_ref.diagnostics.last_action_status,
                             };
                             state_ref.action_engine.enabled = enabled;
@@ -431,17 +451,43 @@ impl AppRuntime {
                         }
                         let suppress_left = guard.cursor_motion.zoom_repeater.is_active();
 
-                        // Cursor tick
-                        if !enabled {
+                        // Cursor + Gyro tick (strictly gated when Game Guard is active)
+                        let stick_delta = if !enabled {
                             guard.cursor_motion.reset_transient();
+                            guard.gyro_engine.reset();
+                            None
+                        } else {
+                            guard.cursor_motion.tick(
+                                &snapshot,
+                                &profile.cursor,
+                                dt,
+                                suppress_left,
+                            )
+                        };
+                        let gyro_delta = if enabled {
+                            guard.gyro_engine.tick(&snapshot, &profile.gyro, dt)
+                        } else {
+                            None
+                        };
+                        let combined_delta = match (stick_delta, gyro_delta) {
+                            (Some((sx, sy)), Some((gx, gy))) => Some((sx + gx, sy + gy)),
+                            (Some(s), None) => Some(s),
+                            (None, Some(g)) => Some(g),
+                            (None, None) => None,
+                        };
+
+                        if !enabled {
                             guard.diagnostics.cursor_state = "disabled".to_string();
-                            guard.diagnostics.cursor_message = "Input is paused".to_string();
-                        } else if let Some((dx, dy)) = guard.cursor_motion.tick(
-                            &snapshot,
-                            &profile.cursor,
-                            dt,
-                            suppress_left,
-                        ) {
+                            guard.diagnostics.cursor_message = if guard_suspended {
+                                guard
+                                    .game_guard_status
+                                    .reason
+                                    .clone()
+                                    .unwrap_or_else(|| "Suspended by Game Guard".to_string())
+                            } else {
+                                "Input is paused".to_string()
+                            };
+                        } else if let Some((dx, dy)) = combined_delta {
                             guard.diagnostics.cursor_state = "moving".to_string();
                             guard.diagnostics.cursor_message =
                                 format!("Moving ({:+.1}, {:+.1})", dx, dy);
@@ -534,7 +580,126 @@ impl AppRuntime {
             voice_state: self.voice.state(),
             game_guard_prefs: guard.game_guard_prefs,
             game_guard_status: guard.game_guard_status.clone(),
+            hardware_fx: guard.hardware_fx,
+            radial_menu_open: guard.radial_menu_open,
+            automation_api_url: format!(
+                "http://127.0.0.1:{}",
+                crate::services::automation_api::AUTOMATION_API_PORT
+            ),
         }
+    }
+
+    pub fn update_gyro_config(
+        &self,
+        gyro: crate::engines::gyro_engine::GyroConfiguration,
+    ) -> Result<AppStatePayload, String> {
+        {
+            let mut guard = self.state.lock().unwrap();
+            Self::active_profile_mut(&mut guard.document).gyro = gyro;
+            self.persist_doc(&guard.document)?;
+        }
+        Ok(self.state_payload())
+    }
+
+    pub fn set_hardware_fx(
+        &self,
+        fx: crate::models::hardware_fx::HardwareFxPreferences,
+    ) -> AppStatePayload {
+        {
+            let mut guard = self.state.lock().unwrap();
+            guard.hardware_fx = fx;
+        }
+        self.state_payload()
+    }
+
+    pub fn update_radial_menu(
+        &self,
+        slices: Vec<crate::models::profile::RadialMenuSlice>,
+    ) -> Result<AppStatePayload, String> {
+        {
+            let mut guard = self.state.lock().unwrap();
+            Self::active_profile_mut(&mut guard.document).radial_menu = slices;
+            self.persist_doc(&guard.document)?;
+        }
+        Ok(self.state_payload())
+    }
+
+    pub fn set_radial_menu_open(&self, open: bool) -> AppStatePayload {
+        {
+            let mut guard = self.state.lock().unwrap();
+            guard.radial_menu_open = open;
+        }
+        self.state_payload()
+    }
+
+    pub fn execute_radial_slice(&self, slice_id: String) -> AppStatePayload {
+        let (slice, suspended) = {
+            let mut guard = self.state.lock().unwrap();
+            guard.radial_menu_open = false;
+            let s = Self::active_profile_from_doc(&guard.document)
+                .radial_menu
+                .iter()
+                .find(|s| s.id == slice_id)
+                .cloned();
+            (s, guard.game_guard_status.is_suspended)
+        };
+        if !suspended {
+            if let Some(s) = slice {
+                self.haptics
+                    .play(ControllerVibration::SoftTap, VibrationPhase::Press);
+                match s.action_type {
+                    crate::models::profile::ActionType::RunCommand => {
+                        if let Some(cmd) = s.command_script {
+                            let _ = execute_command_script(&cmd);
+                        }
+                    }
+                    crate::models::profile::ActionType::ToggleVoiceMode => {
+                        let _ = self.voice.toggle();
+                    }
+                    crate::models::profile::ActionType::WindowSnapLeft => {
+                        send_shortcut(
+                            &ShortcutDescriptor::new(0x25, vec![KeyboardModifier::Win]),
+                            CompanionShortcutPhase::Tap,
+                        );
+                    }
+                    crate::models::profile::ActionType::WindowSnapRight => {
+                        send_shortcut(
+                            &ShortcutDescriptor::new(0x27, vec![KeyboardModifier::Win]),
+                            CompanionShortcutPhase::Tap,
+                        );
+                    }
+                    crate::models::profile::ActionType::WindowMaximize => {
+                        send_shortcut(
+                            &ShortcutDescriptor::new(0x26, vec![KeyboardModifier::Win]),
+                            CompanionShortcutPhase::Tap,
+                        );
+                    }
+                    crate::models::profile::ActionType::WindowNextMonitor => {
+                        send_shortcut(
+                            &ShortcutDescriptor::new(
+                                0x27,
+                                vec![KeyboardModifier::Shift, KeyboardModifier::Win],
+                            ),
+                            CompanionShortcutPhase::Tap,
+                        );
+                    }
+                    crate::models::profile::ActionType::MediaPlayPause => {
+                        send_shortcut(
+                            &ShortcutDescriptor::new(0xB3, vec![]),
+                            CompanionShortcutPhase::Tap,
+                        );
+                    }
+                    crate::models::profile::ActionType::VolumeMute => {
+                        send_shortcut(
+                            &ShortcutDescriptor::new(0xAD, vec![]),
+                            CompanionShortcutPhase::Tap,
+                        );
+                    }
+                    _ => {}
+                }
+            }
+        }
+        self.state_payload()
     }
 
     pub fn set_voice_enabled(&self, enabled: bool) -> AppStatePayload {

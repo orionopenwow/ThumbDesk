@@ -1,11 +1,19 @@
 import type { AppStatePayload, ControllerControlID } from "../types/models";
 
-export type DemoPreset = "ps" | "ps-mod" | "xbox" | "sheet" | "updater";
+export type DemoPreset = "ps" | "ps-mod" | "xbox" | "sheet" | "updater" | "lab" | "radial";
 
 export function getDemoPreset(): DemoPreset | null {
   if (typeof window === "undefined") return null;
   const p = new URLSearchParams(window.location.search).get("demo");
-  if (p === "ps" || p === "ps-mod" || p === "xbox" || p === "sheet" || p === "updater") {
+  if (
+    p === "ps" ||
+    p === "ps-mod" ||
+    p === "xbox" ||
+    p === "sheet" ||
+    p === "updater" ||
+    p === "lab" ||
+    p === "radial"
+  ) {
     return p;
   }
   return null;
@@ -47,6 +55,25 @@ export function buildDemoState(preset: DemoPreset): AppStatePayload {
             flickBoostEnabled: true,
             zoomGestureEnabled: true,
           },
+          gyro: {
+            enabled: true,
+            activationMode: "touchpadTouch",
+            sensitivity: 1.4,
+            deadzone: 0.04,
+            smoothing: 0.25,
+            invertX: false,
+            invertY: false,
+          },
+          radialMenu: [
+            { id: "s1", label: "Terminal", actionType: "runCommand", commandScript: "wt.exe" },
+            { id: "s2", label: "Snap Left", actionType: "windowSnapLeft" },
+            { id: "s3", label: "Snap Right", actionType: "windowSnapRight" },
+            { id: "s4", label: "Next Monitor", actionType: "windowNextMonitor" },
+            { id: "s5", label: "Play / Pause", actionType: "mediaPlayPause" },
+            { id: "s6", label: "Mute Audio", actionType: "volumeMute" },
+            { id: "s7", label: "Voice Mode", actionType: "toggleVoiceMode" },
+            { id: "s8", label: "Maximize", actionType: "windowMaximize" },
+          ],
           mappings: {
             buttonSouth: { actionType: "leftClick", triggerMode: "tap", repeatDelay: 0.35, repeatInterval: 0.08, vibration: "softTap" },
             buttonEast: { actionType: "rightClick", triggerMode: "tap", repeatDelay: 0.35, repeatInterval: 0.08, vibration: "softTap" },
@@ -136,6 +163,10 @@ export function buildDemoState(preset: DemoPreset): AppStatePayload {
       analogValues: {},
       eventCount: 142,
       shareSupported: isXbox,
+      hasGyro: !isXbox,
+      gyro: [0.02, -0.14, 0.01],
+      touchpadTouched: false,
+      pollingRateHz: isXbox ? 125 : 250,
     },
     updateStatus:
       preset === "updater"
@@ -189,5 +220,13 @@ export function buildDemoState(preset: DemoPreset): AppStatePayload {
       steamRunning: true,
       steamGameActive: false,
     },
+    hardwareFx: {
+      leftTriggerMode: "softClick",
+      rightTriggerMode: "dualStage",
+      lightbarMode: "autoTelemetry",
+      customRgb: [56, 189, 248],
+    },
+    radialMenuOpen: preset === "radial",
+    automationApiUrl: "http://127.0.0.1:49152",
   };
 }

@@ -3,6 +3,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Battery,
   CheckCircle2,
+  Cpu,
+  Disc,
   Download,
   MoreHorizontal,
   RotateCcw,
@@ -11,8 +13,10 @@ import {
 import appIconUrl from "./assets/AppIconStudio.png";
 import { backend, isTauriEnv } from "./api/backend";
 import { ControllerWorkspace } from "./components/ControllerWorkspace";
+import { HardwareLabModal } from "./components/HardwareLabModal";
 import { InspectorSidebar } from "./components/InspectorSidebar";
 import { MappingSheet } from "./components/MappingSheet";
+import { RadialMenuOverlay } from "./components/RadialMenuOverlay";
 import { StickRoleSheet } from "./components/StickRoleSheet";
 import { CustomInstallerModal, UpdateFooterPill } from "./components/UpdateExperience";
 import type {
@@ -40,6 +44,7 @@ export const App: React.FC = () => {
   const [editingStick, setEditingStick] = useState<StickSide | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showInstaller, setShowInstaller] = useState(demoPreset === "updater");
+  const [showHardwareLab, setShowHardwareLab] = useState(demoPreset === "lab");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const runAction = async (fn: () => Promise<AppStatePayload>) => {
@@ -274,6 +279,26 @@ export const App: React.FC = () => {
         {errorMsg && (
           <span style={{ fontSize: 12, color: "var(--red)" }}>{errorMsg}</span>
         )}
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() => setShowHardwareLab(true)}
+          title="Calibration, 6-Axis Gyro, Adaptive Triggers & Local API"
+        >
+          <Cpu size={13} /> Hardware Lab
+        </button>
+        <button
+          type="button"
+          className="btn btn-sm"
+          onClick={() =>
+            isTauriEnv()
+              ? runAction(() => backend.setRadialMenuOpen(!state.radialMenuOpen))
+              : setState((prev) => (prev ? { ...prev, radialMenuOpen: !prev.radialMenuOpen } : prev))
+          }
+          title="Open 8-Slice Radial Pie Menu"
+        >
+          <Disc size={13} /> Radial
+        </button>
         <UpdateFooterPill
           status={state.updateStatus}
           onCheck={() => {
@@ -419,6 +444,54 @@ export const App: React.FC = () => {
           status={state.updateStatus}
           onRestartToUpdate={() => backend.restartToUpdate()}
           onClose={() => setShowInstaller(false)}
+        />
+      )}
+
+      {showHardwareLab && (
+        <HardwareLabModal
+          snapshot={snapshot}
+          gyro={
+            activeProfile.gyro ?? {
+              enabled: false,
+              activationMode: "touchpadTouch",
+              sensitivity: 1.2,
+              deadzone: 0.04,
+              smoothing: 0.25,
+              invertX: false,
+              invertY: false,
+            }
+          }
+          hardwareFx={state.hardwareFx}
+          radialMenu={activeProfile.radialMenu ?? []}
+          automationApiUrl={state.automationApiUrl}
+          onUpdateGyro={(g) => runAction(() => backend.updateGyroConfig(g))}
+          onUpdateHardwareFx={(fx) => runAction(() => backend.setHardwareFx(fx))}
+          onOpenRadialPreview={() => {
+            setShowHardwareLab(false);
+            if (isTauriEnv()) {
+              runAction(() => backend.setRadialMenuOpen(true));
+            } else {
+              setState((prev) => (prev ? { ...prev, radialMenuOpen: true } : prev));
+            }
+          }}
+          onClose={() => setShowHardwareLab(false)}
+        />
+      )}
+
+      {state.radialMenuOpen && (
+        <RadialMenuOverlay
+          slices={activeProfile.radialMenu ?? []}
+          snapshot={snapshot}
+          onSelectSlice={(id) =>
+            isTauriEnv()
+              ? runAction(() => backend.executeRadialSlice(id))
+              : setState((prev) => (prev ? { ...prev, radialMenuOpen: false } : prev))
+          }
+          onClose={() =>
+            isTauriEnv()
+              ? runAction(() => backend.setRadialMenuOpen(false))
+              : setState((prev) => (prev ? { ...prev, radialMenuOpen: false } : prev))
+          }
         />
       )}
     </div>

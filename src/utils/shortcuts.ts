@@ -106,6 +106,18 @@ export const ACTION_TYPE_OPTIONS: { value: ActionType; label: string }[] = [
   { value: "toggleCursorSpeeds", label: "Toggle Cursor Speeds" },
   { value: "runCommand", label: "Run Command / Script" },
   { value: "toggleVoiceMode", label: "Toggle Voice Mode" },
+  { value: "openRadialMenu", label: "Open Radial Pie Menu" },
+  { value: "windowSnapLeft", label: "Window Snap Left" },
+  { value: "windowSnapRight", label: "Window Snap Right" },
+  { value: "windowMaximize", label: "Window Maximize" },
+  { value: "windowMinimize", label: "Window Minimize" },
+  { value: "windowNextMonitor", label: "Move Window to Next Monitor" },
+  { value: "mediaPlayPause", label: "Media Play / Pause" },
+  { value: "mediaNext", label: "Media Next Track" },
+  { value: "mediaPrev", label: "Media Previous Track" },
+  { value: "volumeUp", label: "Volume Up" },
+  { value: "volumeDown", label: "Volume Down" },
+  { value: "volumeMute", label: "Volume Mute" },
 ];
 
 export const TRIGGER_MODE_LABELS: Record<TriggerMode, string> = {
@@ -138,6 +150,16 @@ export function supportedTriggerModesForAction(actionType: ActionType): TriggerM
     case "toggleCursorSpeeds":
     case "runCommand":
     case "toggleVoiceMode":
+    case "openRadialMenu":
+    case "windowSnapLeft":
+    case "windowSnapRight":
+    case "windowMaximize":
+    case "windowMinimize":
+    case "windowNextMonitor":
+    case "mediaPlayPause":
+    case "mediaNext":
+    case "mediaPrev":
+    case "volumeMute":
       return ["tap"];
     case "keyboardShortcut":
       return ["tap", "holdWhilePressed", "repeatWhileHeld"];

@@ -68,7 +68,19 @@ export type ActionType =
   | "crossEdgeDown"
   | "toggleCursorSpeeds"
   | "runCommand"
-  | "toggleVoiceMode";
+  | "toggleVoiceMode"
+  | "windowSnapLeft"
+  | "windowSnapRight"
+  | "windowMaximize"
+  | "windowMinimize"
+  | "windowNextMonitor"
+  | "mediaPlayPause"
+  | "mediaNext"
+  | "mediaPrev"
+  | "volumeUp"
+  | "volumeDown"
+  | "volumeMute"
+  | "openRadialMenu";
 
 export interface ControllerActionMapping {
   actionType: ActionType;
@@ -111,10 +123,51 @@ export interface CursorConfiguration {
   zoomGestureEnabled: boolean;
 }
 
+export type GyroActivationMode =
+  | "touchpadTouch"
+  | "always"
+  | "holdLeftTrigger"
+  | "holdRightShoulder";
+
+export interface GyroConfiguration {
+  enabled: boolean;
+  activationMode: GyroActivationMode;
+  sensitivity: number;
+  deadzone: number;
+  smoothing: number;
+  invertX: boolean;
+  invertY: boolean;
+}
+
+export type AdaptiveTriggerMode =
+  | "off"
+  | "softClick"
+  | "mediumDetent"
+  | "rigidWall"
+  | "dualStage";
+
+export type LightbarMode = "autoTelemetry" | "customColor" | "off";
+
+export interface HardwareFxPreferences {
+  leftTriggerMode: AdaptiveTriggerMode;
+  rightTriggerMode: AdaptiveTriggerMode;
+  lightbarMode: LightbarMode;
+  customRgb: [number, number, number];
+}
+
+export interface RadialMenuSlice {
+  id: string;
+  label: string;
+  actionType: ActionType;
+  commandScript?: string | null;
+}
+
 export interface ControllerProfile {
   id: string;
   name: string;
   cursor: CursorConfiguration;
+  gyro?: GyroConfiguration;
+  radialMenu?: RadialMenuSlice[];
   mappings: Partial<Record<ControllerControlID, ControllerActionMapping>>;
   modifierLayers: ControllerModifierLayer[];
   applicationMappings: ApplicationMappingOverrides[];
@@ -144,6 +197,10 @@ export interface ControllerSnapshot {
   analogValues: Partial<Record<ControllerControlID, number>>;
   eventCount: number;
   shareSupported: boolean;
+  hasGyro?: boolean;
+  gyro?: [number, number, number];
+  touchpadTouched?: boolean;
+  pollingRateHz?: number;
 }
 
 export interface HapticsPreferences {
@@ -259,4 +316,7 @@ export interface AppStatePayload {
   voiceState: VoiceModeState;
   gameGuardPrefs: GameGuardPreferences;
   gameGuardStatus: GameGuardStatus;
+  hardwareFx: HardwareFxPreferences;
+  radialMenuOpen: boolean;
+  automationApiUrl: string;
 }

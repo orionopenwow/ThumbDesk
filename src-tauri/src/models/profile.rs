@@ -78,6 +78,18 @@ pub enum ActionType {
     ToggleCursorSpeeds,
     RunCommand,
     ToggleVoiceMode,
+    WindowSnapLeft,
+    WindowSnapRight,
+    WindowMaximize,
+    WindowMinimize,
+    WindowNextMonitor,
+    MediaPlayPause,
+    MediaNext,
+    MediaPrev,
+    VolumeUp,
+    VolumeDown,
+    VolumeMute,
+    OpenRadialMenu,
 }
 
 impl ActionType {
@@ -103,6 +115,18 @@ impl ActionType {
             Self::ToggleCursorSpeeds => "Toggle Cursor Speeds",
             Self::RunCommand => "Run Command / Script",
             Self::ToggleVoiceMode => "Toggle Voice Mode",
+            Self::WindowSnapLeft => "Window Snap Left",
+            Self::WindowSnapRight => "Window Snap Right",
+            Self::WindowMaximize => "Window Maximize",
+            Self::WindowMinimize => "Window Minimize",
+            Self::WindowNextMonitor => "Move Window to Next Monitor",
+            Self::MediaPlayPause => "Media Play / Pause",
+            Self::MediaNext => "Media Next Track",
+            Self::MediaPrev => "Media Previous Track",
+            Self::VolumeUp => "Volume Up",
+            Self::VolumeDown => "Volume Down",
+            Self::VolumeMute => "Volume Mute",
+            Self::OpenRadialMenu => "Open Radial Pie Menu",
         }
     }
 
@@ -125,7 +149,18 @@ impl ActionType {
             | Self::CrossEdgeDown
             | Self::ToggleCursorSpeeds
             | Self::RunCommand
-            | Self::ToggleVoiceMode => &[TriggerMode::Tap],
+            | Self::ToggleVoiceMode
+            | Self::WindowSnapLeft
+            | Self::WindowSnapRight
+            | Self::WindowMaximize
+            | Self::WindowMinimize
+            | Self::WindowNextMonitor
+            | Self::MediaPlayPause
+            | Self::MediaNext
+            | Self::MediaPrev
+            | Self::VolumeMute
+            | Self::OpenRadialMenu => &[TriggerMode::Tap],
+            Self::VolumeUp | Self::VolumeDown => &[TriggerMode::Tap, TriggerMode::RepeatWhileHeld],
             Self::KeyboardShortcut => &[
                 TriggerMode::Tap,
                 TriggerMode::HoldWhilePressed,
@@ -419,10 +454,77 @@ impl Default for CursorConfiguration {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct RadialMenuSlice {
+    pub id: String,
+    pub label: String,
+    pub action_type: ActionType,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub command_script: Option<String>,
+}
+
+pub fn default_radial_menu() -> Vec<RadialMenuSlice> {
+    vec![
+        RadialMenuSlice {
+            id: "s1".into(),
+            label: "Terminal".into(),
+            action_type: ActionType::RunCommand,
+            command_script: Some("wt.exe".into()),
+        },
+        RadialMenuSlice {
+            id: "s2".into(),
+            label: "Snap Left".into(),
+            action_type: ActionType::WindowSnapLeft,
+            command_script: None,
+        },
+        RadialMenuSlice {
+            id: "s3".into(),
+            label: "Snap Right".into(),
+            action_type: ActionType::WindowSnapRight,
+            command_script: None,
+        },
+        RadialMenuSlice {
+            id: "s4".into(),
+            label: "Next Monitor".into(),
+            action_type: ActionType::WindowNextMonitor,
+            command_script: None,
+        },
+        RadialMenuSlice {
+            id: "s5".into(),
+            label: "Play / Pause".into(),
+            action_type: ActionType::MediaPlayPause,
+            command_script: None,
+        },
+        RadialMenuSlice {
+            id: "s6".into(),
+            label: "Mute Audio".into(),
+            action_type: ActionType::VolumeMute,
+            command_script: None,
+        },
+        RadialMenuSlice {
+            id: "s7".into(),
+            label: "Voice Mode".into(),
+            action_type: ActionType::ToggleVoiceMode,
+            command_script: None,
+        },
+        RadialMenuSlice {
+            id: "s8".into(),
+            label: "Maximize".into(),
+            action_type: ActionType::WindowMaximize,
+            command_script: None,
+        },
+    ]
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ControllerProfile {
     pub id: String,
     pub name: String,
     pub cursor: CursorConfiguration,
+    #[serde(default)]
+    pub gyro: crate::engines::gyro_engine::GyroConfiguration,
+    #[serde(default = "default_radial_menu")]
+    pub radial_menu: Vec<RadialMenuSlice>,
     #[serde(
         default,
         serialize_with = "serialize_control_map",
@@ -827,6 +929,8 @@ impl ControllerProfile {
             id: "gabes-defaults".to_string(),
             name: "Gabe's Defaults".to_string(),
             cursor: CursorConfiguration::default(),
+            gyro: crate::engines::gyro_engine::GyroConfiguration::default(),
+            radial_menu: default_radial_menu(),
             mappings,
             modifier_layers: vec![
                 ControllerModifierLayer {

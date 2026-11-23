@@ -146,6 +146,8 @@ pub fn poll_xinput(event_count: u64) -> Option<XInputReading> {
             analog_values: analog,
             event_count,
             share_supported: false,
+            polling_rate_hz: 125,
+            ..Default::default()
         };
 
         return Some(XInputReading { slot, snapshot });

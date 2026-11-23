@@ -19,6 +19,7 @@ pub fn run() {
         .manage(runtime)
         .setup(move |app| {
             runtime_for_setup.start_loop(app.handle().clone());
+            services::automation_api::start_automation_api(std::sync::Arc::clone(&runtime_for_setup));
 
             let logo_icon = tauri::image::Image::from_bytes(include_bytes!("../icons/icon.png"))
                 .ok()
@@ -112,6 +113,11 @@ pub fn run() {
             commands::set_game_guard_preferences,
             commands::open_steam_controller_settings,
             commands::open_steam_big_picture,
+            commands::update_gyro_config,
+            commands::set_hardware_fx,
+            commands::update_radial_menu,
+            commands::set_radial_menu_open,
+            commands::execute_radial_slice,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vibe Controller");
@@ -331,6 +337,9 @@ mod wave2_tests {
         }
         fn toggle_voice_mode(&mut self) {
             self.events.push("toggleVoice".into());
+        }
+        fn toggle_radial_menu(&mut self) {
+            self.events.push("toggleRadial".into());
         }
         fn start_scroll_repeat(
             &mut self,
@@ -1026,5 +1035,101 @@ mod wave4_tests {
         let cmd_mapping = ControllerActionMapping::command("wt.exe".to_string());
         assert_eq!(cmd_mapping.action_type, ActionType::RunCommand);
         assert_eq!(cmd_mapping.summary(), "Run: wt.exe");
+    }
+
+    #[test]
+    fn v2_gyro_adaptive_triggers_lightbar_automation_api_and_hid_hardening() {
+        use crate::engines::gyro_engine::{GyroActivationMode, GyroConfiguration, GyroEngine};
+        use crate::hardware::hid_controller::{
+            build_ds4_fx_packet, build_dualsense_fx_packet, parse_dualsense_report,
+            parse_dualshock4_report, parse_xbox360_usb_report,
+        };
+        use crate::models::control::ControllerSnapshot;
+        use crate::models::hardware_fx::{
+            resolve_lightbar_rgb, AdaptiveTriggerMode, HardwareFxPreferences, LightbarMode,
+        };
+        use crate::services::automation_api::handle_http_request;
+
+        // 1. Gyro engine activation & deadzone math
+        let mut gyro = GyroEngine::default();
+        let cfg = GyroConfiguration {
+            enabled: true,
+            activation_mode: GyroActivationMode::TouchpadTouch,
+            sensitivity: 1.5,
+            deadzone: 0.04,
+            smoothing: 0.0,
+            invert_x: false,
+            invert_y: false,
+        };
+        let mut snap = ControllerSnapshot {
+            is_connected: true,
+            has_gyro: true,
+            gyro: [0.0, -0.5, 0.0],
+            touchpad_touched: false,
+            ..Default::default()
+        };
+        assert!(gyro.tick(&snap, &cfg, 0.01).is_none()); // gated by touchpad touch
+        snap.touchpad_touched = true;
+        let (dx, _dy) = gyro.tick(&snap, &cfg, 0.01).expect("gyro should move when touched");
+        assert!(dx > 10.0);
+
+        // 2. DualSense adaptive trigger & RGB lightbar packets
+        let fx_pkt = build_dualsense_fx_packet(
+            0.5,
+            0.25,
+            AdaptiveTriggerMode::SoftClick,
+            AdaptiveTriggerMode::DualStage,
+            [56, 189, 248],
+        );
+        assert_eq!(fx_pkt[0], 0x02);
+        assert_eq!(fx_pkt[1], 0x0F);
+        assert_eq!(fx_pkt[11], 0x02); // right trigger dual stage mode
+        assert_eq!(fx_pkt[22], 0x02); // left trigger soft click mode
+        assert_eq!([fx_pkt[45], fx_pkt[46], fx_pkt[47]], [56, 189, 248]);
+
+        let ds4_pkt = build_ds4_fx_packet(0.2, 0.4, [245, 158, 11]);
+        assert_eq!([ds4_pkt[6], ds4_pkt[7], ds4_pkt[8]], [245, 158, 11]);
+
+        // 3. Telemetry lightbar color resolution
+        let prefs = HardwareFxPreferences::default();
+        assert_eq!(
+            resolve_lightbar_rgb(prefs, true, false, false, Some(0.9), true),
+            [245, 158, 11] // Amber when Game Guard suspended
+        );
+        assert_eq!(
+            resolve_lightbar_rgb(prefs, false, true, false, Some(0.9), true),
+            [52, 211, 153] // Emerald when Voice listening
+        );
+        assert_eq!(
+            resolve_lightbar_rgb(
+                HardwareFxPreferences {
+                    lightbar_mode: LightbarMode::Off,
+                    ..prefs
+                },
+                false,
+                false,
+                false,
+                Some(0.9),
+                true
+            ),
+            [0, 0, 0]
+        );
+
+        // 4. HID short-packet fuzz hardening (must return None, never panic)
+        for len in 0..8 {
+            let short = vec![0x01u8; len];
+            assert!(parse_dualsense_report(&short, 1).is_none());
+            assert!(parse_dualshock4_report(&short, 1).is_none());
+            assert!(parse_xbox360_usb_report(&short, 1).is_none());
+        }
+
+        // 5. Local Automation API HTTP routing
+        let tmp = tempfile::tempdir().unwrap();
+        let rt = AppRuntime::new(ProfileStore::with_directory(tmp.path().to_path_buf()));
+        let (code, body) = handle_http_request("GET /api/status HTTP/1.1\r\n\r\n", &rt);
+        assert_eq!(code, "200 OK");
+        assert!(body.contains("activeProfileId"));
+        let (code404, _) = handle_http_request("GET /api/nope HTTP/1.1\r\n\r\n", &rt);
+        assert_eq!(code404, "404 Not Found");
     }
 }

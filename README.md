@@ -61,13 +61,16 @@ Built natively in **Rust + Tauri v2 (Win32 `SendInput`, XInput, Direct USB/BT HI
 - **Automatic Anti-Cheat Guard**: `thumbdesk.` **never** attempts to bypass or inject into protected games. When kernel anti-cheat processes (**Riot Vanguard**, **Easy Anti-Cheat**, **BattlEye**, **FACEIT**, **Ricochet**, **EA AntiCheat**, **nProtect GameGuard**, **XIGNCODE3**) are detected, `thumbdesk.` automatically suspends all synthetic `SendInput` cursor and keyboard output and clearly displays a **Guard** status badge.
 - **Steam Game Auto-Pause & Activation**: Automatically pauses desktop input whenever a Steam game (`\steamapps\common\`) takes focus so your controller hands off cleanly to native game / Steam Input. Includes one-click **Steam Input** (`steam://settings/controller`) and **Big Picture** (`steam://open/bigpicture`) launchers right in the sidebar.
 
-### 4. Dynamic Xbox & PlayStation Hardware + Haptics
-- **Native XInput + Direct HID (`hidapi`)**: Supports Xbox 360 / One / Series X|S, Sony DualSense (USB & Bluetooth), and DualShock 4 (USB & Bluetooth) — including **Touchpad click**, battery telemetry, and dual-motor rumble.
-- **7 Tactile Haptic Waveforms**: `Soft tap`, `Double tap`, `Thump`, `Left pulse`, `Right pulse`, `Grab & release`, and `None`, with left/right handle locality routing and strength scaling.
+### 4. Next-Gen Hardware: 6-Axis Gyro, Adaptive Triggers, Lightbar & Calibration Lab
+- **6-Axis Gyro Mouse (`DualSense / DS4`)**: Capacitive touchpad-to-activate (or Always / Hold L2 / Hold R1) IMU cursor control with deadzone and smoothing.
+- **DualSense Adaptive Triggers (`L2 / R2`)**: Native USB HID `0x02` resistance profiles (`Off`, `Soft Click`, `Medium Detent`, `Rigid Wall`, `Dual-Stage`).
+- **Dynamic Lightbar RGB Telemetry**: Automatic state coloring — Cyan (Active), Amber (Anti-Cheat Guard), Emerald (Voice Listening), Purple (Modifier Held), Red (Low Battery), or custom RGB.
+- **Hardware & Sensor Lab**: Built-in live **Stick Drift & Circularity Tester** (dual-stick polar canvas), live Polling Rate readout, and 7-waveform dual-motor haptics.
 
-### 5. Multi-PC LAN Companion Mode & Portable Profiles
-- **Cross-PC Edge Handoff**: Push your cursor past a screen edge to seamlessly control a second Windows PC over local LAN TCP/UDP.
-- **macOS `GAPE.json` Import**: Atomic JSON profiles stored at `%APPDATA%\Vibe Controller\profiles.json` with one-click import/export and automatic macOS shortcut conversion.
+### 5. 8-Slice Radial Pie Menu, Window Tiling, Media & Local Automation API
+- **8-Slice Obsidian Radial Wheel**: Trigger from any controller button (or the footer `Radial` button) and flick the stick to launch Terminal, snap windows (`Left` / `Right` / `Maximize` / `Next Monitor`), toggle Voice Mode, or control Media & Volume.
+- **Localhost Automation API (`http://127.0.0.1:49152`)**: Zero-dependency local HTTP JSON bridge (`GET /api/status`, `POST /api/haptic`, `POST /api/lightbar`, `POST /api/profile`) so OBS, Stream Deck, VS Code, or build scripts can vibrate your controller when a task finishes.
+- **Multi-PC LAN Companion Mode & macOS `GAPE.json` Import**: Slide your cursor across a screen edge to control a second Windows PC over LAN TCP/UDP, with atomic JSON profiles.
 
 ---
 

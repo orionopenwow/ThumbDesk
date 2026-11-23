@@ -24,6 +24,7 @@ pub trait ActionSink: Send {
     fn toggle_cursor_speeds(&mut self);
     fn run_command(&mut self, script: &str);
     fn toggle_voice_mode(&mut self);
+    fn toggle_radial_menu(&mut self);
     fn start_scroll_repeat(
         &mut self,
         control: ControllerControlID,
@@ -511,6 +512,57 @@ impl ActionEngine {
                 }
             }
             ActionType::ToggleVoiceMode => sink.toggle_voice_mode(),
+            ActionType::OpenRadialMenu => sink.toggle_radial_menu(),
+            ActionType::WindowSnapLeft => {
+                let sc = ShortcutDescriptor::new(0x25, vec![crate::models::shortcut::KeyboardModifier::Win]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::WindowSnapRight => {
+                let sc = ShortcutDescriptor::new(0x27, vec![crate::models::shortcut::KeyboardModifier::Win]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::WindowMaximize => {
+                let sc = ShortcutDescriptor::new(0x26, vec![crate::models::shortcut::KeyboardModifier::Win]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::WindowMinimize => {
+                let sc = ShortcutDescriptor::new(0x28, vec![crate::models::shortcut::KeyboardModifier::Win]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::WindowNextMonitor => {
+                let sc = ShortcutDescriptor::new(
+                    0x27,
+                    vec![
+                        crate::models::shortcut::KeyboardModifier::Shift,
+                        crate::models::shortcut::KeyboardModifier::Win,
+                    ],
+                );
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::MediaPlayPause => {
+                let sc = ShortcutDescriptor::new(0xB3, vec![]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::MediaNext => {
+                let sc = ShortcutDescriptor::new(0xB0, vec![]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::MediaPrev => {
+                let sc = ShortcutDescriptor::new(0xB1, vec![]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::VolumeUp => {
+                let sc = ShortcutDescriptor::new(0xAF, vec![]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::VolumeDown => {
+                let sc = ShortcutDescriptor::new(0xAE, vec![]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
+            ActionType::VolumeMute => {
+                let sc = ShortcutDescriptor::new(0xAD, vec![]);
+                sink.shortcut(&sc, CompanionShortcutPhase::Tap);
+            }
         }
         sink.report_status(mapping.summary());
     }

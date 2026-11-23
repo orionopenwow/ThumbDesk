@@ -16,6 +16,16 @@ pub const MICROSOFT_VID: u16 = 0x045E;
 pub const XBOX360_WIRED_PID: u16 = 0x028E;
 pub const XBOX_SERIES_USB_PID: u16 = 0x0B12;
 
+pub const NINTENDO_VID: u16 = 0x057E;
+pub const SWITCH_PRO_PID: u16 = 0x2009;
+
+fn read_i16_le(data: &[u8], idx: usize) -> i16 {
+    if idx + 1 >= data.len() {
+        return 0;
+    }
+    i16::from_le_bytes([data[idx], data[idx + 1]])
+}
+
 fn norm_u8_stick(v: u8) -> f64 {
     ((v as f64 - 127.5) / 127.5).clamp(-1.0, 1.0)
 }
@@ -122,6 +132,19 @@ pub fn parse_dualsense_report(data: &[u8], event_count: u64) -> Option<Controlle
     analog.insert(ControllerControlID::LeftTrigger, lt);
     analog.insert(ControllerControlID::RightTrigger, rt);
 
+    // Optional 6-axis IMU gyro (bytes offset+15..21) & touchpad finger-0 active (offset+32 bit 7 == 0)
+    let has_gyro = data.len() >= offset + 21;
+    let gyro = if has_gyro {
+        [
+            read_i16_le(data, offset + 15) as f32 / 8192.0,
+            read_i16_le(data, offset + 17) as f32 / 8192.0,
+            read_i16_le(data, offset + 19) as f32 / 8192.0,
+        ]
+    } else {
+        [0.0, 0.0, 0.0]
+    };
+    let touchpad_touched = data.len() > offset + 32 && (data[offset + 32] & 0x80) == 0;
+
     Some(ControllerSnapshot {
         is_connected: true,
         name: Some("DualSense Wireless Controller".to_string()),
@@ -142,6 +165,10 @@ pub fn parse_dualsense_report(data: &[u8], event_count: u64) -> Option<Controlle
         analog_values: analog,
         event_count,
         share_supported: false,
+        has_gyro,
+        gyro,
+        touchpad_touched,
+        polling_rate_hz: if is_bt { 500 } else { 250 },
     })
 }
 
@@ -233,6 +260,7 @@ pub fn parse_dualshock4_report(data: &[u8], event_count: u64) -> Option<Controll
         analog_values: analog,
         event_count,
         share_supported: false,
+        ..Default::default()
     })
 }
 
@@ -337,7 +365,47 @@ pub fn parse_xbox360_usb_report(data: &[u8], event_count: u64) -> Option<Control
         analog_values: analog,
         event_count,
         share_supported: false,
+        ..Default::default()
     })
+}
+
+/// Builds a 48-byte Sony DualSense USB output report (report ID 0x02) with rumble, adaptive triggers, and RGB lightbar.
+pub fn build_dualsense_fx_packet(
+    left_motor: f32,
+    right_motor: f32,
+    left_trigger: crate::models::hardware_fx::AdaptiveTriggerMode,
+    right_trigger: crate::models::hardware_fx::AdaptiveTriggerMode,
+    rgb: [u8; 3],
+) -> [u8; 48] {
+    let mut buf = [0u8; 48];
+    buf[0] = 0x02;
+    // Valid flags 0: 0x01 (compat rumble) | 0x02 (haptics) | 0x04 (right trigger) | 0x08 (left trigger)
+    buf[1] = 0x0F;
+    // Valid flags 1: 0x04 (lightbar RGB)
+    buf[2] = 0x04;
+    buf[3] = (right_motor.clamp(0.0, 1.0) * 255.0).round() as u8;
+    buf[4] = (left_motor.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let r_fx = crate::models::hardware_fx::encode_dualsense_trigger_effect(right_trigger);
+    let l_fx = crate::models::hardware_fx::encode_dualsense_trigger_effect(left_trigger);
+    buf[11..22].copy_from_slice(&r_fx);
+    buf[22..33].copy_from_slice(&l_fx);
+    buf[45] = rgb[0];
+    buf[46] = rgb[1];
+    buf[47] = rgb[2];
+    buf
+}
+
+/// Builds a 32-byte Sony DualShock 4 USB output report (report ID 0x05) with rumble + RGB lightbar.
+pub fn build_ds4_fx_packet(left_motor: f32, right_motor: f32, rgb: [u8; 3]) -> [u8; 32] {
+    let mut buf = [0u8; 32];
+    buf[0] = 0x05;
+    buf[1] = 0x03; // Enable rumble + lightbar
+    buf[4] = (right_motor.clamp(0.0, 1.0) * 255.0).round() as u8;
+    buf[5] = (left_motor.clamp(0.0, 1.0) * 255.0).round() as u8;
+    buf[6] = rgb[0];
+    buf[7] = rgb[1];
+    buf[8] = rgb[2];
+    buf
 }
 
 /// Builds a 48-byte Sony DualSense USB output report (report ID 0x02) for dual-motor rumble.
@@ -450,6 +518,24 @@ impl HidControllerHandle {
             }
             HidControllerKind::DualShock4 => {
                 let report = build_ds4_usb_rumble(left, right);
+                self.device.write(&report).is_ok()
+            }
+        }
+    }
+
+    pub fn apply_hardware_fx(
+        &self,
+        left_trigger: crate::models::hardware_fx::AdaptiveTriggerMode,
+        right_trigger: crate::models::hardware_fx::AdaptiveTriggerMode,
+        rgb: [u8; 3],
+    ) -> bool {
+        match self.kind {
+            HidControllerKind::DualSense => {
+                let report = build_dualsense_fx_packet(0.0, 0.0, left_trigger, right_trigger, rgb);
+                self.device.write(&report).is_ok()
+            }
+            HidControllerKind::DualShock4 => {
+                let report = build_ds4_fx_packet(0.0, 0.0, rgb);
                 self.device.write(&report).is_ok()
             }
         }

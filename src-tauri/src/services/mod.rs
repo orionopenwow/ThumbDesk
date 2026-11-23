@@ -1,3 +1,4 @@
+pub mod automation_api;
 pub mod codex_provisioner;
 pub mod companion;
 pub mod game_guard;
