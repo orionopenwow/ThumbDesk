@@ -35,8 +35,14 @@ use crate::platform::win_input::{
 };
 use crate::services::codex_provisioner::ensure_fork_shortcut;
 use crate::services::companion::CompanionService;
+use crate::services::game_guard::{
+    evaluate_game_guard, open_steam_uri, GameGuardPreferences, GameGuardStatus,
+};
 use crate::services::profile_store::ProfileStore;
 use crate::services::updater::{AppUpdateService, UpdateStatus};
+use crate::services::voice_mode::{
+    execute_command_script, VoiceCommandRule, VoiceModeService, VoiceModeState,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,6 +82,9 @@ pub struct AppStatePayload {
     pub diagnostics: RuntimeDiagnostics,
     pub snapshot: ControllerSnapshot,
     pub update_status: UpdateStatus,
+    pub voice_state: VoiceModeState,
+    pub game_guard_prefs: GameGuardPreferences,
+    pub game_guard_status: GameGuardStatus,
 }
 
 struct SharedState {
@@ -87,6 +96,8 @@ struct SharedState {
     action_engine: ActionEngine,
     is_routing_to_companion: bool,
     local_restore_pos: Option<(f64, f64)>,
+    game_guard_prefs: GameGuardPreferences,
+    game_guard_status: GameGuardStatus,
 }
 
 pub struct AppRuntime {
@@ -97,6 +108,7 @@ pub struct AppRuntime {
     scroll_repeater: Arc<HeldScrollRepeater>,
     companion: CompanionService,
     updater: AppUpdateService,
+    voice: VoiceModeService,
     running: Arc<AtomicBool>,
 }
 
@@ -105,6 +117,7 @@ struct LiveActionSink<'a> {
     companion: &'a CompanionService,
     haptics: &'a HapticsEngine,
     scroll_repeater: &'a HeldScrollRepeater,
+    voice: &'a VoiceModeService,
     cursor_motion: &'a mut CursorMotionState,
     last_status: &'a mut String,
 }
@@ -150,6 +163,18 @@ impl<'a> ActionSink for LiveActionSink<'a> {
 
     fn toggle_cursor_speeds(&mut self) {
         self.cursor_motion.speeds_swapped = !self.cursor_motion.speeds_swapped;
+    }
+
+    fn run_command(&mut self, script: &str) {
+        match execute_command_script(script) {
+            Ok(()) => *self.last_status = format!("Ran: {}", script.trim()),
+            Err(e) => *self.last_status = e,
+        }
+    }
+
+    fn toggle_voice_mode(&mut self) {
+        let st = self.voice.toggle();
+        *self.last_status = st.status_message;
     }
 
     fn start_scroll_repeat(
@@ -204,6 +229,8 @@ impl AppRuntime {
             action_engine: ActionEngine::new(),
             is_routing_to_companion: false,
             local_restore_pos: None,
+            game_guard_prefs: GameGuardPreferences::default(),
+            game_guard_status: GameGuardStatus::default(),
         }));
 
         let state_for_companion = Arc::clone(&state);
@@ -224,6 +251,7 @@ impl AppRuntime {
 
         let updater = AppUpdateService::new();
         updater.check_and_preload_async(3);
+        let voice = VoiceModeService::new();
 
         Arc::new(Self {
             store,
@@ -233,6 +261,7 @@ impl AppRuntime {
             scroll_repeater,
             companion,
             updater,
+            voice,
             running: Arc::new(AtomicBool::new(false)),
         })
     }
@@ -304,15 +333,21 @@ impl AppRuntime {
                     last_tick = now_inst;
                     let now_secs = now_inst.duration_since(start_epoch).as_secs_f64();
 
-                    // Poll active foreground app every 250ms
-                    if now_inst.duration_since(last_app_check) >= Duration::from_millis(250) {
+                    // Poll active foreground app + Game Guard every 400ms
+                    if now_inst.duration_since(last_app_check) >= Duration::from_millis(400) {
                         last_app_check = now_inst;
                         let fg = frontmost_application();
+                        let running_apps = crate::platform::active_app::list_running_apps();
                         let mut guard = rt.state.lock().unwrap();
                         guard.diagnostics.active_app_id =
                             fg.as_ref().map(|a| a.bundle_identifier.clone());
                         guard.diagnostics.active_app_name =
                             fg.as_ref().map(|a| a.display_name.clone());
+                        guard.game_guard_status = evaluate_game_guard(
+                            guard.game_guard_prefs,
+                            fg.as_ref(),
+                            &running_apps,
+                        );
                     }
 
                     // Poll hardware
@@ -329,7 +364,8 @@ impl AppRuntime {
                     {
                         let mut guard = rt.state.lock().unwrap();
                         guard.snapshot = snapshot.clone();
-                        let enabled = guard.runtime_enabled;
+                        let guard_suspended = guard.game_guard_status.is_suspended;
+                        let enabled = guard.runtime_enabled && !guard_suspended;
                         let profile = Self::active_profile_from_doc(&guard.document).clone();
                         let active_app = guard.diagnostics.active_app_id.clone();
 
@@ -354,10 +390,12 @@ impl AppRuntime {
                                 companion: &rt.companion,
                                 haptics: &rt.haptics,
                                 scroll_repeater: &rt.scroll_repeater,
+                                voice: &rt.voice,
                                 cursor_motion: &mut state_ref.cursor_motion,
                                 last_status: &mut state_ref.diagnostics.last_action_status,
                             };
                             state_ref.action_engine.enabled = enabled;
+                            state_ref.action_engine.suspended = guard_suspended;
                             state_ref.action_engine.process(
                                 &snapshot,
                                 &profile,
@@ -493,7 +531,40 @@ impl AppRuntime {
             diagnostics: guard.diagnostics.clone(),
             snapshot: guard.snapshot.clone(),
             update_status: self.updater.status(),
+            voice_state: self.voice.state(),
+            game_guard_prefs: guard.game_guard_prefs,
+            game_guard_status: guard.game_guard_status.clone(),
         }
+    }
+
+    pub fn set_voice_enabled(&self, enabled: bool) -> AppStatePayload {
+        let _ = self.voice.set_enabled(enabled);
+        self.state_payload()
+    }
+
+    pub fn set_voice_rules(&self, rules: Vec<VoiceCommandRule>) -> AppStatePayload {
+        let _ = self.voice.set_rules(rules);
+        self.state_payload()
+    }
+
+    pub fn test_command_script(&self, script: String) -> Result<(), String> {
+        execute_command_script(&script)
+    }
+
+    pub fn set_game_guard_preferences(&self, prefs: GameGuardPreferences) -> AppStatePayload {
+        {
+            let mut guard = self.state.lock().unwrap();
+            guard.game_guard_prefs = prefs;
+        }
+        self.state_payload()
+    }
+
+    pub fn open_steam_controller_settings(&self) -> Result<(), String> {
+        open_steam_uri("steam://settings/controller")
+    }
+
+    pub fn open_steam_big_picture(&self) -> Result<(), String> {
+        open_steam_uri("steam://open/bigpicture")
     }
 
     pub fn update_status(&self) -> UpdateStatus {

@@ -211,3 +211,39 @@ pub fn restart_to_update(
     app.exit(0);
     Ok(())
 }
+
+#[tauri::command]
+pub fn set_voice_enabled(enabled: bool, runtime: SharedRuntime<'_>) -> AppStatePayload {
+    runtime.set_voice_enabled(enabled)
+}
+
+#[tauri::command]
+pub fn set_voice_rules(
+    rules: Vec<crate::services::voice_mode::VoiceCommandRule>,
+    runtime: SharedRuntime<'_>,
+) -> AppStatePayload {
+    runtime.set_voice_rules(rules)
+}
+
+#[tauri::command]
+pub fn test_command_script(script: String, runtime: SharedRuntime<'_>) -> Result<(), String> {
+    runtime.test_command_script(script)
+}
+
+#[tauri::command]
+pub fn set_game_guard_preferences(
+    prefs: crate::services::game_guard::GameGuardPreferences,
+    runtime: SharedRuntime<'_>,
+) -> AppStatePayload {
+    runtime.set_game_guard_preferences(prefs)
+}
+
+#[tauri::command]
+pub fn open_steam_controller_settings(runtime: SharedRuntime<'_>) -> Result<(), String> {
+    runtime.open_steam_controller_settings()
+}
+
+#[tauri::command]
+pub fn open_steam_big_picture(runtime: SharedRuntime<'_>) -> Result<(), String> {
+    runtime.open_steam_big_picture()
+}

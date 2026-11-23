@@ -106,6 +106,12 @@ pub fn run() {
             commands::get_update_status,
             commands::check_for_updates,
             commands::restart_to_update,
+            commands::set_voice_enabled,
+            commands::set_voice_rules,
+            commands::test_command_script,
+            commands::set_game_guard_preferences,
+            commands::open_steam_controller_settings,
+            commands::open_steam_big_picture,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vibe Controller");
@@ -319,6 +325,12 @@ mod wave2_tests {
         }
         fn toggle_cursor_speeds(&mut self) {
             self.events.push("toggleSpeeds".into());
+        }
+        fn run_command(&mut self, script: &str) {
+            self.events.push(format!("cmd:{}", script));
+        }
+        fn toggle_voice_mode(&mut self) {
+            self.events.push("toggleVoice".into());
         }
         fn start_scroll_repeat(
             &mut self,
@@ -921,5 +933,98 @@ mod wave4_tests {
         std::fs::write(&f, b"thumbdesk-update-test").unwrap();
         let digest = compute_file_sha256(&f).unwrap();
         assert_eq!(digest.len(), 64);
+    }
+
+    #[test]
+    fn voice_mode_rules_and_game_guard_compliance() {
+        use crate::services::game_guard::{
+            detect_anti_cheat_name, evaluate_game_guard, is_steam_game_path, GameGuardPreferences,
+        };
+        use crate::services::voice_mode::{match_voice_rule, VoiceCommandRule};
+
+        let rules = vec![
+            VoiceCommandRule {
+                id: "1".into(),
+                phrase: "open terminal".into(),
+                command: "wt.exe".into(),
+                enabled: true,
+            },
+            VoiceCommandRule {
+                id: "2".into(),
+                phrase: "disabled rule".into(),
+                command: "calc.exe".into(),
+                enabled: false,
+            },
+        ];
+
+        assert_eq!(
+            match_voice_rule("  OPEN TERMINAL ", &rules).map(|r| r.command.as_str()),
+            Some("wt.exe")
+        );
+        assert!(match_voice_rule("disabled rule", &rules).is_none());
+
+        assert_eq!(
+            detect_anti_cheat_name("vgtray.exe").as_deref(),
+            Some("Riot Vanguard")
+        );
+        assert_eq!(
+            detect_anti_cheat_name("EasyAntiCheat_EOS.exe").as_deref(),
+            Some("Easy Anti-Cheat (EOS)")
+        );
+        assert_eq!(detect_anti_cheat_name("notepad.exe"), None);
+
+        assert!(is_steam_game_path(
+            r"C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\game\bin\win64\cs2.exe"
+        ));
+        assert!(!is_steam_game_path(r"C:\Windows\System32\notepad.exe"));
+
+        let prefs = GameGuardPreferences::default();
+        let app = |id: &str, name: &str, path: &str| crate::platform::active_app::RunningAppInfo {
+            bundle_identifier: id.into(),
+            display_name: name.into(),
+            executable_path: path.into(),
+        };
+
+        let ac_status = evaluate_game_guard(
+            prefs,
+            Some(&app("notepad.exe", "Notepad", r"C:\Windows\System32\notepad.exe")),
+            &[
+                app("explorer.exe", "Explorer", r"C:\Windows\explorer.exe"),
+                app("BEService.exe", "BattlEye", r"C:\Program Files\Common Files\BattlEye\BEService.exe"),
+            ],
+        );
+        assert!(ac_status.is_suspended);
+        assert_eq!(ac_status.detected_anti_cheat.as_deref(), Some("BattlEye"));
+
+        let steam_status = evaluate_game_guard(
+            prefs,
+            Some(&app(
+                "eldenring.exe",
+                "ELDEN RING",
+                r"D:\SteamLibrary\steamapps\common\ELDEN RING\Game\eldenring.exe",
+            )),
+            &[
+                app("explorer.exe", "Explorer", r"C:\Windows\explorer.exe"),
+                app("steam.exe", "Steam", r"C:\Program Files (x86)\Steam\steam.exe"),
+            ],
+        );
+        assert!(steam_status.is_suspended);
+        assert!(steam_status.steam_game_active);
+        assert!(steam_status.steam_running);
+
+        let clean_status = evaluate_game_guard(
+            prefs,
+            Some(&app(
+                "code.exe",
+                "VS Code",
+                r"C:\Program Files\Microsoft VS Code\Code.exe",
+            )),
+            &[app("explorer.exe", "Explorer", r"C:\Windows\explorer.exe")],
+        );
+        assert!(!clean_status.is_suspended);
+
+        let cmd_mapping = ControllerActionMapping::command("wt.exe".to_string());
+        assert_eq!(cmd_mapping.action_type, ActionType::RunCommand);
+        assert_eq!(cmd_mapping.summary(), "Run: wt.exe");
     }
 }

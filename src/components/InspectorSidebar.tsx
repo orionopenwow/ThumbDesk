@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import {
+  Gamepad2,
+  Mic,
   MonitorSmartphone,
   MousePointer2,
   Play,
+  Plus,
+  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  Trash2,
   Vibrate,
 } from "lucide-react";
 import type {
@@ -13,9 +18,13 @@ import type {
   CompanionMode,
   CompanionPeer,
   CursorConfiguration,
+  GameGuardPreferences,
+  GameGuardStatus,
   HapticsPreferences,
   HapticsStatus,
   StickAssignment,
+  VoiceCommandRule,
+  VoiceModeState,
 } from "../types/models";
 import { StudioSlider } from "./StudioSlider";
 
@@ -27,6 +36,9 @@ interface InspectorSidebarProps {
   companionEdge: CompanionEdge;
   companionState: CompanionConnectionState;
   companionPeers: CompanionPeer[];
+  voiceState: VoiceModeState;
+  gameGuardPrefs: GameGuardPreferences;
+  gameGuardStatus: GameGuardStatus;
   onUpdateCursor: (next: CursorConfiguration) => void;
   onUpdateHaptics: (next: HapticsPreferences) => void;
   onPreviewVibration: () => void;
@@ -37,6 +49,12 @@ interface InspectorSidebarProps {
   onDisconnectCompanion: () => void;
   onForceHandoff: () => void;
   onReturnLocal: () => void;
+  onSetVoiceEnabled: (enabled: boolean) => void;
+  onSetVoiceRules: (rules: VoiceCommandRule[]) => void;
+  onTestCommand: (script: string) => void;
+  onUpdateGameGuard: (prefs: GameGuardPreferences) => void;
+  onOpenSteamController: () => void;
+  onOpenSteamBigPicture: () => void;
 }
 
 export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
@@ -47,6 +65,9 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   companionEdge,
   companionState,
   companionPeers,
+  voiceState,
+  gameGuardPrefs,
+  gameGuardStatus,
   onUpdateCursor,
   onUpdateHaptics,
   onPreviewVibration,
@@ -57,10 +78,19 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
   onDisconnectCompanion,
   onForceHandoff,
   onReturnLocal,
+  onSetVoiceEnabled,
+  onSetVoiceRules,
+  onTestCommand,
+  onUpdateGameGuard,
+  onOpenSteamController,
+  onOpenSteamBigPicture,
 }) => {
   const [showFineTuning, setShowFineTuning] = useState(false);
   const [showCompanionOpts, setShowCompanionOpts] = useState(false);
   const [showVibOpts, setShowVibOpts] = useState(false);
+  const [showVoiceRules, setShowVoiceRules] = useState(false);
+  const [newPhrase, setNewPhrase] = useState("");
+  const [newCommand, setNewCommand] = useState("");
   const [selectedPeer, setSelectedPeer] = useState<string>("");
 
   const patchCursor = (partial: Partial<CursorConfiguration>) =>
@@ -418,6 +448,198 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
             </button>
           </div>
         )}
+      </section>
+
+      {/* VOICE MODE CARD */}
+      <section className="sidebar-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7 }}>
+            <Mic size={14} color={voiceState.listening ? "var(--green)" : "var(--accent-bright)"} /> Voice Mode
+          </h3>
+          <button
+            type="button"
+            className="icon-ghost-btn"
+            title="Edit voice command scripts"
+            onClick={() => setShowVoiceRules((v) => !v)}
+          >
+            <SlidersHorizontal size={13} />
+          </button>
+        </div>
+
+        <div className="switch-row">
+          <span style={{ fontSize: 13, color: "#cbd5e1" }}>Listen for scripts</span>
+          <button
+            type="button"
+            className={`toggle-switch ${voiceState.enabled ? "on" : ""}`}
+            onClick={() => onSetVoiceEnabled(!voiceState.enabled)}
+            aria-label="Enable Voice Mode"
+          />
+        </div>
+
+        <div style={{ fontSize: 11.5, color: voiceState.listening ? "var(--green)" : "var(--text-secondary)" }}>
+          {voiceState.lastHeard
+            ? `Heard "${voiceState.lastHeard}"`
+            : voiceState.statusMessage}
+        </div>
+
+        {showVoiceRules && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 7, paddingTop: 6, borderTop: "1px solid var(--border-subtle)" }}>
+            {voiceState.rules.map((rule) => (
+              <div
+                key={rule.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "5px 7px",
+                  borderRadius: 8,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid var(--border-subtle)",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    "{rule.phrase}"
+                  </div>
+                  <div style={{ fontSize: 10.5, fontFamily: "var(--font-mono)", color: "var(--text-tertiary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {rule.command}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="icon-ghost-btn"
+                  title="Test command"
+                  onClick={() => onTestCommand(rule.command)}
+                >
+                  <Play size={11} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-ghost-btn"
+                  title="Remove rule"
+                  onClick={() =>
+                    onSetVoiceRules(voiceState.rules.filter((r) => r.id !== rule.id))
+                  }
+                >
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            ))}
+
+            <input
+              type="text"
+              placeholder='Phrase (e.g. "run build")'
+              value={newPhrase}
+              onChange={(e) => setNewPhrase(e.target.value)}
+              style={{
+                fontSize: 11.5,
+                padding: "6px 8px",
+                borderRadius: 7,
+                background: "rgba(0,0,0,0.28)",
+                border: "1px solid var(--border-subtle)",
+                color: "var(--text-primary)",
+                outline: "none",
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Command / script (e.g. wt.exe)"
+              value={newCommand}
+              onChange={(e) => setNewCommand(e.target.value)}
+              style={{
+                fontSize: 11.5,
+                fontFamily: "var(--font-mono)",
+                padding: "6px 8px",
+                borderRadius: 7,
+                background: "rgba(0,0,0,0.28)",
+                border: "1px solid var(--border-subtle)",
+                color: "var(--text-primary)",
+                outline: "none",
+              }}
+            />
+            <button
+              type="button"
+              className="btn btn-sm"
+              disabled={!newPhrase.trim() || !newCommand.trim()}
+              onClick={() => {
+                onSetVoiceRules([
+                  ...voiceState.rules,
+                  {
+                    id: `rule-${Date.now()}`,
+                    phrase: newPhrase.trim(),
+                    command: newCommand.trim(),
+                    enabled: true,
+                  },
+                ]);
+                setNewPhrase("");
+                setNewCommand("");
+              }}
+            >
+              <Plus size={12} /> Add voice script
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* ANTI-CHEAT GUARD & STEAM CARD */}
+      <section className="sidebar-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7 }}>
+            <ShieldCheck size={14} color={gameGuardStatus.isSuspended ? "var(--orange)" : "var(--green)"} /> Game Guard & Steam
+          </h3>
+        </div>
+
+        <div className="switch-row">
+          <span style={{ fontSize: 12.5, color: "#cbd5e1" }}>Anti-cheat auto-pause</span>
+          <button
+            type="button"
+            className={`toggle-switch ${gameGuardPrefs.antiCheatAutoPause ? "on" : ""}`}
+            onClick={() =>
+              onUpdateGameGuard({
+                ...gameGuardPrefs,
+                antiCheatAutoPause: !gameGuardPrefs.antiCheatAutoPause,
+              })
+            }
+            aria-label="Anti-cheat auto-pause"
+          />
+        </div>
+
+        <div className="switch-row">
+          <span style={{ fontSize: 12.5, color: "#cbd5e1" }}>Steam game auto-pause</span>
+          <button
+            type="button"
+            className={`toggle-switch ${gameGuardPrefs.steamGameAutoPause ? "on" : ""}`}
+            onClick={() =>
+              onUpdateGameGuard({
+                ...gameGuardPrefs,
+                steamGameAutoPause: !gameGuardPrefs.steamGameAutoPause,
+              })
+            }
+            aria-label="Steam game auto-pause"
+          />
+        </div>
+
+        <div
+          style={{
+            fontSize: 11.5,
+            color: gameGuardStatus.isSuspended ? "var(--orange)" : "var(--text-secondary)",
+          }}
+        >
+          {gameGuardStatus.isSuspended
+            ? gameGuardStatus.reason
+            : gameGuardStatus.steamRunning
+            ? "Steam detected · Compliant"
+            : "Compliant · No anti-cheat active"}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 2 }}>
+          <button type="button" className="btn btn-sm" onClick={onOpenSteamController}>
+            <Gamepad2 size={11} /> Steam Input
+          </button>
+          <button type="button" className="btn btn-sm" onClick={onOpenSteamBigPicture}>
+            Big Picture
+          </button>
+        </div>
       </section>
     </aside>
   );

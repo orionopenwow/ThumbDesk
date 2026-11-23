@@ -22,16 +22,24 @@ import type {
   StickSide,
 } from "./types/models";
 import { hasExplicitOverride, resolveEffectiveMapping } from "./utils/controllerLayout";
+import { buildDemoState, getDemoPreset } from "./utils/demoState";
 
 export const App: React.FC = () => {
-  const [state, setState] = useState<AppStatePayload | null>(null);
+  const demoPreset = !isTauriEnv() ? getDemoPreset() : null;
+  const [state, setState] = useState<AppStatePayload | null>(() =>
+    demoPreset ? buildDemoState(demoPreset) : null
+  );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
-  const [selectedModifier, setSelectedModifier] = useState<ControllerControlID | null>(null);
-  const [editingControl, setEditingControl] = useState<ControllerControlID | null>(null);
+  const [selectedModifier, setSelectedModifier] = useState<ControllerControlID | null>(
+    demoPreset === "ps-mod" ? "leftShoulder" : null
+  );
+  const [editingControl, setEditingControl] = useState<ControllerControlID | null>(
+    demoPreset === "sheet" ? "menu" : null
+  );
   const [editingStick, setEditingStick] = useState<StickSide | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showInstaller, setShowInstaller] = useState(false);
+  const [showInstaller, setShowInstaller] = useState(demoPreset === "updater");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const runAction = async (fn: () => Promise<AppStatePayload>) => {
@@ -85,13 +93,17 @@ export const App: React.FC = () => {
     state.document.profiles[0];
 
   const { snapshot } = state;
-  const statusColor = !state.runtimeEnabled
+  const statusColor = !state.runtimeEnabled || state.gameGuardStatus.isSuspended
     ? "var(--orange)"
     : snapshot.isConnected
     ? "var(--green)"
     : "var(--text-secondary)";
   const statusLabel = !state.runtimeEnabled
     ? "Paused"
+    : state.gameGuardStatus.isSuspended
+    ? state.gameGuardStatus.detectedAntiCheat
+      ? `Guard (${state.gameGuardStatus.detectedAntiCheat})`
+      : "Guard (Steam Game)"
     : snapshot.isConnected
     ? "Active"
     : "Waiting";
@@ -188,6 +200,9 @@ export const App: React.FC = () => {
           companionEdge={state.companionEdge}
           companionState={state.companionState}
           companionPeers={state.companionPeers}
+          voiceState={state.voiceState}
+          gameGuardPrefs={state.gameGuardPrefs}
+          gameGuardStatus={state.gameGuardStatus}
           onUpdateCursor={(cfg) => runAction(() => backend.updateCursorConfig(cfg))}
           onUpdateHaptics={(prefs) => runAction(() => backend.setHapticsPreferences(prefs))}
           onPreviewVibration={() => backend.previewVibration("doubleTap")}
@@ -198,6 +213,18 @@ export const App: React.FC = () => {
           onDisconnectCompanion={() => runAction(() => backend.disconnectCompanion())}
           onForceHandoff={() => runAction(() => backend.forceCompanionHandoff())}
           onReturnLocal={() => runAction(() => backend.returnCompanionLocal())}
+          onSetVoiceEnabled={(en) => runAction(() => backend.setVoiceEnabled(en))}
+          onSetVoiceRules={(rules) => runAction(() => backend.setVoiceRules(rules))}
+          onTestCommand={(script) =>
+            backend.testCommandScript(script).catch((e) => setErrorMsg(String(e)))
+          }
+          onUpdateGameGuard={(prefs) => runAction(() => backend.setGameGuardPreferences(prefs))}
+          onOpenSteamController={() =>
+            backend.openSteamControllerSettings().catch((e) => setErrorMsg(String(e)))
+          }
+          onOpenSteamBigPicture={() =>
+            backend.openSteamBigPicture().catch((e) => setErrorMsg(String(e)))
+          }
         />
 
         <ControllerWorkspace
@@ -347,6 +374,9 @@ export const App: React.FC = () => {
           hapticsPrefs={state.hapticsPreferences}
           hapticsStatus={state.hapticsStatus}
           onPreviewVibration={(p) => backend.previewVibration(p)}
+          onTestCommand={(script) =>
+            backend.testCommandScript(script).catch((e) => setErrorMsg(String(e)))
+          }
           onEnableHaptics={() =>
             runAction(() =>
               backend.setHapticsPreferences({ ...state.hapticsPreferences, enabled: true })

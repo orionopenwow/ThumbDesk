@@ -9,11 +9,13 @@ import type {
   ControllerSnapshot,
   ControllerVibration,
   CursorConfiguration,
+  GameGuardPreferences,
   HapticsPreferences,
   RunningAppInfo,
   StickRoleChoice,
   StickSide,
   UpdateStatus,
+  VoiceCommandRule,
 } from "../types/models";
 
 export function isTauriEnv(): boolean {
@@ -89,6 +91,16 @@ export const backend = {
   getUpdateStatus: () => invoke<UpdateStatus>("get_update_status"),
   checkForUpdates: () => invoke<UpdateStatus>("check_for_updates"),
   restartToUpdate: () => invoke<void>("restart_to_update"),
+  setVoiceEnabled: (enabled: boolean) =>
+    invoke<AppStatePayload>("set_voice_enabled", { enabled }),
+  setVoiceRules: (rules: VoiceCommandRule[]) =>
+    invoke<AppStatePayload>("set_voice_rules", { rules }),
+  testCommandScript: (script: string) =>
+    invoke<void>("test_command_script", { script }),
+  setGameGuardPreferences: (prefs: GameGuardPreferences) =>
+    invoke<AppStatePayload>("set_game_guard_preferences", { prefs }),
+  openSteamControllerSettings: () => invoke<void>("open_steam_controller_settings"),
+  openSteamBigPicture: () => invoke<void>("open_steam_big_picture"),
   onTelemetry: (cb: (snapshot: ControllerSnapshot) => void): Promise<UnlistenFn> =>
     listen<ControllerSnapshot>("controller-telemetry", (event) => cb(event.payload)),
 };

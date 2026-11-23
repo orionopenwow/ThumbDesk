@@ -22,6 +22,8 @@ pub trait ActionSink: Send {
     fn space_switch(&mut self, direction: SpaceSwitchDirection);
     fn cross_edge(&mut self, direction: CrossEdgeDirection);
     fn toggle_cursor_speeds(&mut self);
+    fn run_command(&mut self, script: &str);
+    fn toggle_voice_mode(&mut self);
     fn start_scroll_repeat(
         &mut self,
         control: ControllerControlID,
@@ -501,6 +503,14 @@ impl ActionEngine {
             ActionType::CrossEdgeUp => sink.cross_edge(CrossEdgeDirection::Up),
             ActionType::CrossEdgeDown => sink.cross_edge(CrossEdgeDirection::Down),
             ActionType::ToggleCursorSpeeds => sink.toggle_cursor_speeds(),
+            ActionType::RunCommand => {
+                if let Some(script) = &mapping.command_script {
+                    if !script.trim().is_empty() {
+                        sink.run_command(script);
+                    }
+                }
+            }
+            ActionType::ToggleVoiceMode => sink.toggle_voice_mode(),
         }
         sink.report_status(mapping.summary());
     }

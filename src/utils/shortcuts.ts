@@ -104,6 +104,8 @@ export const ACTION_TYPE_OPTIONS: { value: ActionType; label: string }[] = [
   { value: "crossEdgeUp", label: "Cross Edge Up" },
   { value: "crossEdgeDown", label: "Cross Edge Down" },
   { value: "toggleCursorSpeeds", label: "Toggle Cursor Speeds" },
+  { value: "runCommand", label: "Run Command / Script" },
+  { value: "toggleVoiceMode", label: "Toggle Voice Mode" },
 ];
 
 export const TRIGGER_MODE_LABELS: Record<TriggerMode, string> = {
@@ -134,6 +136,8 @@ export function supportedTriggerModesForAction(actionType: ActionType): TriggerM
     case "crossEdgeUp":
     case "crossEdgeDown":
     case "toggleCursorSpeeds":
+    case "runCommand":
+    case "toggleVoiceMode":
       return ["tap"];
     case "keyboardShortcut":
       return ["tap", "holdWhilePressed", "repeatWhileHeld"];
@@ -162,6 +166,11 @@ export function mappingSummary(mapping: ControllerActionMapping): string {
   if (mapping.actionType === "none") return "No action";
   if (mapping.actionType === "keyboardShortcut") {
     return formatShortcut(mapping.shortcut);
+  }
+  if (mapping.actionType === "runCommand") {
+    const cmd = mapping.commandScript?.trim();
+    if (!cmd) return "Run Command";
+    return cmd.length > 22 ? `Run: ${cmd.slice(0, 19)}…` : `Run: ${cmd}`;
   }
   return (
     ACTION_TYPE_OPTIONS.find((o) => o.value === mapping.actionType)?.label ??

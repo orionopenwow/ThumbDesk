@@ -66,11 +66,14 @@ export type ActionType =
   | "crossEdgeRight"
   | "crossEdgeUp"
   | "crossEdgeDown"
-  | "toggleCursorSpeeds";
+  | "toggleCursorSpeeds"
+  | "runCommand"
+  | "toggleVoiceMode";
 
 export interface ControllerActionMapping {
   actionType: ActionType;
   shortcut?: ShortcutDescriptor | null;
+  commandScript?: string | null;
   triggerMode: TriggerMode;
   repeatDelay: number;
   repeatInterval: number;
@@ -212,6 +215,35 @@ export interface UpdateStatus {
   message: string;
 }
 
+export interface VoiceCommandRule {
+  id: string;
+  phrase: string;
+  command: string;
+  enabled: boolean;
+}
+
+export interface VoiceModeState {
+  enabled: boolean;
+  listening: boolean;
+  lastHeard: string | null;
+  lastExecuted: string | null;
+  statusMessage: string;
+  rules: VoiceCommandRule[];
+}
+
+export interface GameGuardPreferences {
+  antiCheatAutoPause: boolean;
+  steamGameAutoPause: boolean;
+}
+
+export interface GameGuardStatus {
+  isSuspended: boolean;
+  reason: string | null;
+  detectedAntiCheat: string | null;
+  steamRunning: boolean;
+  steamGameActive: boolean;
+}
+
 export interface AppStatePayload {
   document: ProfileDocument;
   runtimeEnabled: boolean;
@@ -224,4 +256,7 @@ export interface AppStatePayload {
   diagnostics: RuntimeDiagnostics;
   snapshot: ControllerSnapshot;
   updateStatus: UpdateStatus;
+  voiceState: VoiceModeState;
+  gameGuardPrefs: GameGuardPreferences;
+  gameGuardStatus: GameGuardStatus;
 }

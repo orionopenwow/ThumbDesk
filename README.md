@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/assets/logo.png" alt="thumbdesk. logo" width="110" />
+  <img src="docs/assets/logo.png" alt="thumbdesk. logo" width="104" />
 </p>
 
 <h1 align="center">thumbdesk.</h1>
 
 <p align="center">
-  <strong>Turn any Xbox or PlayStation controller into a native, 120 Hz Windows desktop input studio.</strong>
+  <strong>Control your entire Windows PC from an Xbox or PlayStation controller — with voice scripts, custom commands, haptics, and automatic anti-cheat safety.</strong>
 </p>
 
 <p align="center">
@@ -18,35 +18,58 @@
 
 ---
 
-**thumbdesk.** is a native Windows desktop application built with **Rust + Tauri v2 (Win32 `SendInput`, XInput, Direct USB/BT HID)** and **React 19 + TypeScript**. Inspired by [ggaabe/vibe-controller](https://github.com/ggaabe/vibe-controller) for macOS, it brings full feature parity — dual-stick primary & precision cursors, modifier layers, per-app sparse overrides, dual-motor haptics, Virtual Desktop switching, and Multi-PC LAN Companion handoff — to Windows in a single portable `.exe`.
+### What is `thumbdesk.`?
+
+**thumbdesk.** lets you lean back and run your entire Windows desktop from a game controller — no mouse or keyboard required. Move the cursor smoothly at 120 Hz with your thumbsticks, click/drag/scroll, switch Virtual Desktops, trigger keyboard shortcuts, launch **any shell command or `.bat`/PowerShell script** from a button or your voice, and even slide your cursor across the screen edge onto a second Windows PC over LAN.
+
+Built natively in **Rust + Tauri v2 (Win32 `SendInput`, XInput, Direct USB/BT HID)** and **React 19 + TypeScript**, it ships as a **single portable `ThumbDesk.exe`** with zero drivers, zero background bloat, and built-in SHA-256 verified auto-updates.
 
 <p align="center">
-  <img src="docs/assets/ps_studio.png" alt="PlayStation 3D Studio View" width="46%" />
-  <img src="docs/assets/xbox_studio.png" alt="Xbox 3D Studio View" width="46%" />
+  <img src="docs/assets/thumbdesk_ui_screenshot.png" alt="thumbdesk. Real Desktop UI" width="100%" />
 </p>
+
+### See It In Action
+
+<p align="center">
+  <img src="docs/assets/thumbdesk_demo.gif" alt="thumbdesk. Feature Walkthrough GIF" width="94%" />
+</p>
+
+---
 
 ## Download & Quick Start
 
-1. Download **`ThumbDesk-Windows-x64.zip`** (or standalone **`ThumbDesk.exe`**) from the [Latest Release](https://github.com/orionopenwow/ThumbDesk/releases/latest).
-2. Connect an **Xbox** (360 / One / Series X|S) or **PlayStation** (DualSense / DualShock 4, USB or Bluetooth) controller.
-3. Run **`ThumbDesk.exe`** — no installer, no drivers, and no external runtime required.
+1. Download **`ThumbDesk.exe`** (standalone) or **`ThumbDesk-Windows-x64.zip`** from the [Latest Release](https://github.com/orionopenwow/ThumbDesk/releases/latest).
+2. Plug in or pair an **Xbox** (360 / One / Series X|S) or **PlayStation** (DualSense / DualShock 4, USB or Bluetooth) controller.
+3. Launch **`ThumbDesk.exe`** — your controller is detected automatically, the 3D studio layout adapts to your hardware, and you're ready to go.
 
-> **Instant local launcher**: If you cloned the repo, double-click **`dev.bat`** to launch the prebuilt standalone `ThumbDesk.exe` with zero compile time (`dev.bat --hot` for live Vite hot-reload, `dev.bat --build` to rebuild, `dev.bat --test` to run all tests).
+> **Auto-Updates Built In**: Whenever a newer GitHub Release is published, `thumbdesk.` quietly preloads it in the background, verifies its SHA-256 checksum against `SHA256SUMS.txt`, and lets you click **Restart to Update** from the custom studio installer.
+
+---
 
 ## Key Features
 
-- **120 Hz Real-Time Cursor Physics (`SendInput`)**: Radial deadzone, exponential response curve, acceleration (`1 + c² × 0.35`), frame-rate independent smoothing, flick boost (`2.0×` throw with `2.0s` linear decay), subpixel remainder accumulation, and cross-edge sweeps (`6000 px/s`).
-- **Dynamic Xbox & PlayStation Hardware Detection**:
-  - **XInput**: Xbox 360 / One / Series X|S input, battery telemetry, and dual-motor rumble.
-  - **Direct HID (`hidapi`)**: Sony DualSense (USB & Bluetooth) and DualShock 4 (USB & Bluetooth), including **Touchpad click** and dual-motor rumble.
-  - Automatically hot-swaps 3D studio hardware artwork, button labels, hotspots, and callouts when switching controllers.
-- **Modifier Layers & Per-App Sparse Overrides**:
-  - Hold `LB`/`L1` or `RB`/`R1` to unlock an entire second layer of shortcuts while preserving normal tap actions (plus `LB + RB` chorded modifiers).
-  - Automatic foreground app detection (`GetForegroundWindow`) for per-`.exe` sparse overrides, including a built-in **Codex / ChatGPT Starter** with non-destructive `%USERPROFILE%\.codex\keybindings.json` provisioning.
-- **Tactile Haptics Engine**: 7 distinct pulse waveforms (`Soft tap`, `Double tap`, `Thump`, `Left pulse`, `Right pulse`, `Grab & release`, `None`) with left/right motor locality routing, strength scaling, and suggested-pattern presets.
-- **Multi-PC LAN Companion Mode**: NDJSON v2 over TCP with automatic UDP LAN discovery for seamless cross-PC pointer, click, scroll, and shortcut handoff.
-- **Portable Profiles & macOS `GAPE.json` Import**: Atomic JSON persistence at `%APPDATA%\Vibe Controller\profiles.json` with one-click import/export and automatic macOS `GAPE.json` shortcut conversion.
-- **Unified Frameless Studio UI + System Tray**: Draggable top bar, stylized Yellow / Green / Red window controls, 6 shell color finishes, searchable Bindings view, live input diagnostics, and Windows System Tray integration.
+### 1. 120 Hz Dual-Stick Cursor & Modifier Layers
+- **Primary + Precision Sticks**: Left stick glides fast across monitors (with radial deadzone, exponential curve, flick boost, and subpixel smoothing); right stick gives pixel-accurate precision.
+- **Hold-to-Shift Modifier Layers**: Hold `L1`/`LB` or `R1`/`RB` to unlock a second layer of shortcuts while preserving normal tap actions (plus `L1 + R1` chords).
+- **Per-App Overrides**: Automatically detects the focused Windows app (`GetForegroundWindow`) so you can bind app-specific shortcuts (includes a built-in **Codex / ChatGPT** starter).
+
+### 2. Voice Mode & Custom Command Scripts
+- **Run Any Command or Script from a Button**: Map any controller button (or modifier combo) to **Run Command / Script** to execute `wt.exe`, PowerShell one-liners, Python scripts, or `.bat` files silently without flashing a console window — complete with an in-modal **Test Command** button.
+- **Offline Voice Mode**: Toggle **Voice Mode** in the sidebar (or map a button to `Toggle Voice Mode`) to trigger any custom command or script by speaking a phrase, powered by built-in offline Windows Speech Recognition (`System.Speech`) with zero cloud APIs.
+
+### 3. Anti-Cheat Compliance & Steam Integration
+- **Automatic Anti-Cheat Guard**: `thumbdesk.` **never** attempts to bypass or inject into protected games. When kernel anti-cheat processes (**Riot Vanguard**, **Easy Anti-Cheat**, **BattlEye**, **FACEIT**, **Ricochet**, **EA AntiCheat**, **nProtect GameGuard**, **XIGNCODE3**) are detected, `thumbdesk.` automatically suspends all synthetic `SendInput` cursor and keyboard output and clearly displays a **Guard** status badge.
+- **Steam Game Auto-Pause & Activation**: Automatically pauses desktop input whenever a Steam game (`\steamapps\common\`) takes focus so your controller hands off cleanly to native game / Steam Input. Includes one-click **Steam Input** (`steam://settings/controller`) and **Big Picture** (`steam://open/bigpicture`) launchers right in the sidebar.
+
+### 4. Dynamic Xbox & PlayStation Hardware + Haptics
+- **Native XInput + Direct HID (`hidapi`)**: Supports Xbox 360 / One / Series X|S, Sony DualSense (USB & Bluetooth), and DualShock 4 (USB & Bluetooth) — including **Touchpad click**, battery telemetry, and dual-motor rumble.
+- **7 Tactile Haptic Waveforms**: `Soft tap`, `Double tap`, `Thump`, `Left pulse`, `Right pulse`, `Grab & release`, and `None`, with left/right handle locality routing and strength scaling.
+
+### 5. Multi-PC LAN Companion Mode & Portable Profiles
+- **Cross-PC Edge Handoff**: Push your cursor past a screen edge to seamlessly control a second Windows PC over local LAN TCP/UDP.
+- **macOS `GAPE.json` Import**: Atomic JSON profiles stored at `%APPDATA%\Vibe Controller\profiles.json` with one-click import/export and automatic macOS shortcut conversion.
+
+---
 
 ## Default Windows Mappings (`Gabe's Defaults`)
 
@@ -59,8 +82,8 @@
 | **RT / R2** | Windows Voice Typing (`Win+H`) | Soft tap |
 | **RB / R1** | Right click (tap) / Modifier layer (hold) | Soft tap |
 | **A / Cross** | Left click | None |
-| **B / Circle** | Area screenshot (`Win+Shift+S` Snipping Tool) | Soft tap |
-| **X / Square** | OCR text capture (`Win+Shift+T` Text Extractor) | Double tap |
+| **B / Circle** | Area screenshot (`Win+Shift+S`) | Soft tap |
+| **X / Square** | OCR text capture (`Win+Shift+T`) | Double tap |
 | **Y / Triangle** | Paste (`Ctrl+V`) | None |
 | **D-Pad Up / Down** | Scroll up / down (repeats while held) | None |
 | **D-Pad Left / Right** | Switch Virtual Desktop (`Ctrl+Win+Left/Right`) | None |
@@ -69,6 +92,8 @@
 | **Menu / Options** | New tab (`Ctrl+T`) | None |
 | **Home / PS** | Close tab/window (`Ctrl+W`) | Thump |
 | **Share (Xbox)** | Type `/` | None |
+
+---
 
 ## Development & Milestone Releases
 
@@ -79,14 +104,17 @@ npm install
 # Run all unit tests (Vitest + Rust)
 .\dev.bat --test
 
+# Launch prebuilt standalone ThumbDesk.exe immediately
+.\dev.bat
+
 # Run live hot-reload development mode
 .\dev.bat --hot
 
-# Package standalone ThumbDesk.exe + ThumbDesk-Windows-x64.zip
+# Package standalone ThumbDesk.exe + ThumbDesk-Windows-x64.zip + SHA256SUMS.txt
 .\package-release.bat
 
 # One-click milestone: test + build + commit + push + tag + GitHub Release
-.\release-milestone.ps1 -Version "v1.0.1" -Message "Milestone: polish and fixes"
+.\release-milestone.ps1 -Version "v1.2.0" -Message "Milestone summary"
 ```
 
 ## Architecture
@@ -95,8 +123,8 @@ npm install
 - **`src-tauri/src/engines/`** — `CursorMath`, `ActionEngine`, and dedicated `HeldScrollRepeater`.
 - **`src-tauri/src/hardware/`** — Win32 `XInput`, `hidapi` DualSense/DS4/Xbox360 parsers, `HapticsEngine`, and `WindowsControllerHub`.
 - **`src-tauri/src/platform/`** — Win32 `SendInput` mouse/keyboard/scroll/Virtual Desktop injection and `GetForegroundWindow` active app detection.
-- **`src-tauri/src/services/`** — `ProfileStore`, `CodexKeybindingProvisioner`, and Tokio TCP/UDP `CompanionService`.
-- **`src/`** — React 19 + TypeScript Obsidian Studio UI with 3D controller renders, horizontal keycap callout pills, and live telemetry.
+- **`src-tauri/src/services/`** — `ProfileStore`, `CodexKeybindingProvisioner`, Tokio TCP/UDP `CompanionService`, `UpdateService` (SHA-256 preloader), `VoiceModeService`, and `game_guard` (Anti-Cheat & Steam compliance).
+- **`src/`** — React 19 + TypeScript Obsidian Studio UI with 3D controller renders, horizontal keycap callouts, Voice/Game Guard sidebar, and custom studio updater modal.
 
 ## Credits & License
 

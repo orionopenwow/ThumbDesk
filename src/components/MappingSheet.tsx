@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Layers, Play, Sliders, X } from "lucide-react";
+import { Layers, Play, Sliders, Terminal, X } from "lucide-react";
 import type {
   ActionType,
   ControllerActionMapping,
@@ -33,6 +33,7 @@ interface MappingSheetProps {
   hapticsPrefs: HapticsPreferences;
   hapticsStatus: HapticsStatus;
   onPreviewVibration: (pattern: ControllerVibration) => void;
+  onTestCommand?: (script: string) => void;
   onEnableHaptics: () => void;
   onClearOverride: () => void;
   onSave: (mapping: ControllerActionMapping) => void;
@@ -92,6 +93,7 @@ export const MappingSheet: React.FC<MappingSheetProps> = ({
   hapticsPrefs,
   hapticsStatus,
   onPreviewVibration,
+  onTestCommand,
   onEnableHaptics,
   onClearOverride,
   onSave,
@@ -133,7 +135,9 @@ export const MappingSheet: React.FC<MappingSheetProps> = ({
   if (modifierControl) titleParts.push(`${controlDisplayName(modifierControl, family)} +`);
   titleParts.push(controlDisplayName(control, family));
 
-  const canSave = draft.actionType !== "keyboardShortcut" || Boolean(draft.shortcut);
+  const canSave =
+    (draft.actionType !== "keyboardShortcut" || Boolean(draft.shortcut)) &&
+    (draft.actionType !== "runCommand" || Boolean(draft.commandScript?.trim()));
   const vibMeta = VIBRATION_OPTIONS.find((v) => v.value === draft.vibration);
 
   return (
@@ -289,6 +293,48 @@ export const MappingSheet: React.FC<MappingSheetProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Custom Command / Script Editor */}
+          {draft.actionType === "runCommand" && (
+            <div className="product-panel" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Terminal size={13} color="var(--accent-bright)" /> Command or script (cmd / PowerShell / .bat)
+                </span>
+                {onTestCommand && (
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    disabled={!draft.commandScript?.trim()}
+                    onClick={() => onTestCommand(draft.commandScript!.trim())}
+                  >
+                    <Play size={11} /> Test Command
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder='e.g. wt.exe  or  powershell -Command "Get-Date"  or  C:\scripts\deploy.bat'
+                value={draft.commandScript ?? ""}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, commandScript: e.target.value }))
+                }
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 12,
+                  padding: "9px 11px",
+                  borderRadius: 9,
+                  background: "rgba(0, 0, 0, 0.34)",
+                  border: "1px solid var(--border-subtle)",
+                  color: "var(--text-primary)",
+                  outline: "none",
+                }}
+              />
+              <div style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
+                Runs silently via Windows <code>cmd /C</code> without flashing a console window.
+              </div>
             </div>
           )}
 

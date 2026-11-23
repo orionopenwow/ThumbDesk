@@ -76,6 +76,8 @@ pub enum ActionType {
     CrossEdgeUp,
     CrossEdgeDown,
     ToggleCursorSpeeds,
+    RunCommand,
+    ToggleVoiceMode,
 }
 
 impl ActionType {
@@ -99,6 +101,8 @@ impl ActionType {
             Self::CrossEdgeUp => "Cross Edge Up",
             Self::CrossEdgeDown => "Cross Edge Down",
             Self::ToggleCursorSpeeds => "Toggle Cursor Speeds",
+            Self::RunCommand => "Run Command / Script",
+            Self::ToggleVoiceMode => "Toggle Voice Mode",
         }
     }
 
@@ -119,7 +123,9 @@ impl ActionType {
             | Self::CrossEdgeRight
             | Self::CrossEdgeUp
             | Self::CrossEdgeDown
-            | Self::ToggleCursorSpeeds => &[TriggerMode::Tap],
+            | Self::ToggleCursorSpeeds
+            | Self::RunCommand
+            | Self::ToggleVoiceMode => &[TriggerMode::Tap],
             Self::KeyboardShortcut => &[
                 TriggerMode::Tap,
                 TriggerMode::HoldWhilePressed,
@@ -182,6 +188,8 @@ pub struct ControllerActionMapping {
     pub action_type: ActionType,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shortcut: Option<ShortcutDescriptor>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub command_script: Option<String>,
     #[serde(default)]
     pub trigger_mode: TriggerMode,
     #[serde(default = "default_repeat_delay")]
@@ -197,6 +205,7 @@ impl Default for ControllerActionMapping {
         Self {
             action_type: ActionType::None,
             shortcut: None,
+            command_script: None,
             trigger_mode: TriggerMode::Tap,
             repeat_delay: default_repeat_delay(),
             repeat_interval: default_repeat_interval(),
@@ -210,6 +219,7 @@ impl ControllerActionMapping {
         Self {
             action_type,
             shortcut: None,
+            command_script: None,
             trigger_mode: action_type.default_trigger_mode(),
             repeat_delay: default_repeat_delay(),
             repeat_interval: default_repeat_interval(),
@@ -221,7 +231,20 @@ impl ControllerActionMapping {
         Self {
             action_type: ActionType::KeyboardShortcut,
             shortcut: Some(shortcut),
+            command_script: None,
             trigger_mode,
+            repeat_delay: default_repeat_delay(),
+            repeat_interval: default_repeat_interval(),
+            vibration: ControllerVibration::None,
+        }
+    }
+
+    pub fn command(script: String) -> Self {
+        Self {
+            action_type: ActionType::RunCommand,
+            shortcut: None,
+            command_script: Some(script),
+            trigger_mode: TriggerMode::Tap,
             repeat_delay: default_repeat_delay(),
             repeat_interval: default_repeat_interval(),
             vibration: ControllerVibration::None,
@@ -241,6 +264,12 @@ impl ControllerActionMapping {
                 .as_ref()
                 .map(|s| s.display_string())
                 .unwrap_or_else(|| "Set shortcut".to_string()),
+            ActionType::RunCommand => self
+                .command_script
+                .as_deref()
+                .filter(|s| !s.trim().is_empty())
+                .map(|s| format!("Run: {}", s.trim()))
+                .unwrap_or_else(|| "Set command".to_string()),
             other => other.display_name().to_string(),
         }
     }
