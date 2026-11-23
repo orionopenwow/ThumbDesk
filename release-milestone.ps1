@@ -73,8 +73,13 @@ $zipHash  ThumbDesk-Windows-x64.zip
 ``````
 "@
 
-$existing = gh release view $Version 2>$null
-if ($LASTEXITCODE -eq 0) {
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+gh release view $Version 2>&1 | Out-Null
+$releaseExists = ($LASTEXITCODE -eq 0)
+$ErrorActionPreference = $prevEAP
+
+if ($releaseExists) {
     gh release upload $Version $exePath $zipPath $sumsPath --clobber
 } else {
     gh release create $Version $exePath $zipPath $sumsPath --title "ThumbDesk $Version" --notes $notes
