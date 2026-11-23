@@ -103,6 +103,9 @@ pub fn run() {
             commands::import_profile_json,
             commands::export_active_profile_json,
             commands::reset_active_profile_to_defaults,
+            commands::get_update_status,
+            commands::check_for_updates,
+            commands::restart_to_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vibe Controller");
@@ -892,5 +895,31 @@ mod wave4_tests {
         let exported = rt.export_active_profile_json().unwrap();
         let st4 = rt.import_profile_json(exported).unwrap();
         assert_eq!(st4.document.profiles.len(), 2);
+    }
+
+    #[test]
+    fn updater_semver_and_sha256_verification() {
+        use crate::services::updater::{
+            compute_file_sha256, is_newer_version, parse_semver, parse_sha256_for_file,
+        };
+
+        assert_eq!(parse_semver("v1.2.3"), Some((1, 2, 3)));
+        assert!(is_newer_version("1.0.0", "v1.1.0"));
+        assert!(is_newer_version("1.1.0", "1.1.1"));
+        assert!(!is_newer_version("1.1.0", "v1.1.0"));
+        assert!(!is_newer_version("1.2.0", "1.1.9"));
+
+        let sums = "9f29470d804087345f8a702e09f8cfe5c15dc1b33aa97e164566a3542d735432  ThumbDesk.exe\n\
+                    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa  ThumbDesk-Windows-x64.zip\n";
+        assert_eq!(
+            parse_sha256_for_file(sums, "ThumbDesk.exe").as_deref(),
+            Some("9f29470d804087345f8a702e09f8cfe5c15dc1b33aa97e164566a3542d735432")
+        );
+
+        let tmp = tempfile::tempdir().unwrap();
+        let f = tmp.path().join("sample.bin");
+        std::fs::write(&f, b"thumbdesk-update-test").unwrap();
+        let digest = compute_file_sha256(&f).unwrap();
+        assert_eq!(digest.len(), 64);
     }
 }

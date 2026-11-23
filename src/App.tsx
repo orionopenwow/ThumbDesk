@@ -14,6 +14,7 @@ import { ControllerWorkspace } from "./components/ControllerWorkspace";
 import { InspectorSidebar } from "./components/InspectorSidebar";
 import { MappingSheet } from "./components/MappingSheet";
 import { StickRoleSheet } from "./components/StickRoleSheet";
+import { CustomInstallerModal, UpdateFooterPill } from "./components/UpdateExperience";
 import type {
   AppStatePayload,
   ControllerControlID,
@@ -30,6 +31,7 @@ export const App: React.FC = () => {
   const [editingControl, setEditingControl] = useState<ControllerControlID | null>(null);
   const [editingStick, setEditingStick] = useState<StickSide | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showInstaller, setShowInstaller] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const runAction = async (fn: () => Promise<AppStatePayload>) => {
@@ -245,6 +247,28 @@ export const App: React.FC = () => {
         {errorMsg && (
           <span style={{ fontSize: 12, color: "var(--red)" }}>{errorMsg}</span>
         )}
+        <UpdateFooterPill
+          status={state.updateStatus}
+          onCheck={() => {
+            setState((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    updateStatus: {
+                      ...prev.updateStatus,
+                      phase: "checking",
+                      message: "Checking GitHub Releases…",
+                    },
+                  }
+                : prev
+            );
+            backend
+              .checkForUpdates()
+              .then((u) => setState((prev) => (prev ? { ...prev, updateStatus: u } : prev)))
+              .catch(() => {});
+          }}
+          onOpenInstaller={() => setShowInstaller(true)}
+        />
         <div style={{ position: "relative" }}>
           <button
             type="button"
@@ -357,6 +381,14 @@ export const App: React.FC = () => {
             runAction(() => backend.assignStickRole(side, role));
           }}
           onClose={() => setEditingStick(null)}
+        />
+      )}
+
+      {showInstaller && (
+        <CustomInstallerModal
+          status={state.updateStatus}
+          onRestartToUpdate={() => backend.restartToUpdate()}
+          onClose={() => setShowInstaller(false)}
         />
       )}
     </div>

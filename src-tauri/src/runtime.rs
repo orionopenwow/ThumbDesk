@@ -36,6 +36,7 @@ use crate::platform::win_input::{
 use crate::services::codex_provisioner::ensure_fork_shortcut;
 use crate::services::companion::CompanionService;
 use crate::services::profile_store::ProfileStore;
+use crate::services::updater::{AppUpdateService, UpdateStatus};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -74,6 +75,7 @@ pub struct AppStatePayload {
     pub companion_peers: Vec<CompanionPeer>,
     pub diagnostics: RuntimeDiagnostics,
     pub snapshot: ControllerSnapshot,
+    pub update_status: UpdateStatus,
 }
 
 struct SharedState {
@@ -94,6 +96,7 @@ pub struct AppRuntime {
     haptics: HapticsEngine,
     scroll_repeater: Arc<HeldScrollRepeater>,
     companion: CompanionService,
+    updater: AppUpdateService,
     running: Arc<AtomicBool>,
 }
 
@@ -219,6 +222,9 @@ impl AppRuntime {
             }
         }));
 
+        let updater = AppUpdateService::new();
+        updater.check_and_preload_async(3);
+
         Arc::new(Self {
             store,
             state,
@@ -226,6 +232,7 @@ impl AppRuntime {
             haptics,
             scroll_repeater,
             companion,
+            updater,
             running: Arc::new(AtomicBool::new(false)),
         })
     }
@@ -485,7 +492,21 @@ impl AppRuntime {
             companion_peers: self.companion.peers(),
             diagnostics: guard.diagnostics.clone(),
             snapshot: guard.snapshot.clone(),
+            update_status: self.updater.status(),
         }
+    }
+
+    pub fn update_status(&self) -> UpdateStatus {
+        self.updater.status()
+    }
+
+    pub fn check_for_updates(&self) -> UpdateStatus {
+        self.updater.check_and_preload_async(0);
+        self.updater.status()
+    }
+
+    pub fn apply_staged_update(&self) -> Result<(), String> {
+        self.updater.apply_staged_update()
     }
 
     fn persist_doc(&self, doc: &ProfileDocument) -> Result<(), String> {

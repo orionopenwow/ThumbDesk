@@ -191,3 +191,23 @@ pub fn reset_active_profile_to_defaults(
 ) -> Result<AppStatePayload, String> {
     runtime.reset_active_profile_to_defaults()
 }
+
+#[tauri::command]
+pub fn get_update_status(runtime: SharedRuntime<'_>) -> crate::services::updater::UpdateStatus {
+    runtime.update_status()
+}
+
+#[tauri::command]
+pub fn check_for_updates(runtime: SharedRuntime<'_>) -> crate::services::updater::UpdateStatus {
+    runtime.check_for_updates()
+}
+
+#[tauri::command]
+pub fn restart_to_update(
+    app: tauri::AppHandle,
+    runtime: SharedRuntime<'_>,
+) -> Result<(), String> {
+    runtime.apply_staged_update()?;
+    app.exit(0);
+    Ok(())
+}

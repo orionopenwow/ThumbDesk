@@ -188,6 +188,30 @@ export interface RuntimeDiagnostics {
   isRoutingToCompanion: boolean;
 }
 
+export type UpdatePhase =
+  | "idle"
+  | "checking"
+  | "upToDate"
+  | "preloading"
+  | "verifying"
+  | "readyToRestart"
+  | "applying"
+  | "error";
+
+export interface UpdateStatus {
+  phase: UpdatePhase;
+  currentVersion: string;
+  latestVersion: string | null;
+  releaseNotes: string | null;
+  releaseUrl: string | null;
+  downloadedBytes: number;
+  totalBytes: number;
+  percent: number;
+  verifiedSha256: string | null;
+  stagedPath: string | null;
+  message: string;
+}
+
 export interface AppStatePayload {
   document: ProfileDocument;
   runtimeEnabled: boolean;
@@ -199,4 +223,5 @@ export interface AppStatePayload {
   companionPeers: CompanionPeer[];
   diagnostics: RuntimeDiagnostics;
   snapshot: ControllerSnapshot;
+  updateStatus: UpdateStatus;
 }

@@ -13,6 +13,7 @@ import type {
   RunningAppInfo,
   StickRoleChoice,
   StickSide,
+  UpdateStatus,
 } from "../types/models";
 
 export function isTauriEnv(): boolean {
@@ -85,6 +86,9 @@ export const backend = {
   exportActiveProfileJson: () => invoke<string>("export_active_profile_json"),
   resetActiveProfileToDefaults: () =>
     invoke<AppStatePayload>("reset_active_profile_to_defaults"),
+  getUpdateStatus: () => invoke<UpdateStatus>("get_update_status"),
+  checkForUpdates: () => invoke<UpdateStatus>("check_for_updates"),
+  restartToUpdate: () => invoke<void>("restart_to_update"),
   onTelemetry: (cb: (snapshot: ControllerSnapshot) => void): Promise<UnlistenFn> =>
     listen<ControllerSnapshot>("controller-telemetry", (event) => cb(event.payload)),
 };
