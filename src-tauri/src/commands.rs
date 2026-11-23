@@ -281,3 +281,42 @@ pub fn set_radial_menu_open(open: bool, runtime: SharedRuntime<'_>) -> AppStateP
 pub fn execute_radial_slice(slice_id: String, runtime: SharedRuntime<'_>) -> AppStatePayload {
     runtime.execute_radial_slice(slice_id)
 }
+
+#[tauri::command]
+pub fn list_triage_items(
+    runtime: SharedRuntime<'_>,
+) -> Vec<crate::services::triage_queue::TriageItem> {
+    runtime.list_triage_items()
+}
+
+#[tauri::command]
+pub fn submit_triage_item(
+    kind: crate::services::triage_queue::TriageKind,
+    title: String,
+    details: String,
+    runtime: SharedRuntime<'_>,
+) -> Result<Vec<crate::services::triage_queue::TriageItem>, String> {
+    runtime.submit_triage_item(kind, title, details)
+}
+
+#[tauri::command]
+pub fn set_triage_status(
+    id: String,
+    status: crate::services::triage_queue::TriageStatus,
+    runtime: SharedRuntime<'_>,
+) -> Result<Vec<crate::services::triage_queue::TriageItem>, String> {
+    runtime.set_triage_status(id, status)
+}
+
+#[tauri::command]
+pub fn delete_triage_item(
+    id: String,
+    runtime: SharedRuntime<'_>,
+) -> Result<Vec<crate::services::triage_queue::TriageItem>, String> {
+    runtime.delete_triage_item(id)
+}
+
+#[tauri::command]
+pub fn export_ade_batch_prompt(runtime: SharedRuntime<'_>) -> String {
+    runtime.export_ade_batch_prompt()
+}

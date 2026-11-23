@@ -17,6 +17,9 @@ import type {
   RunningAppInfo,
   StickRoleChoice,
   StickSide,
+  TriageItem,
+  TriageKind,
+  TriageStatus,
   UpdateStatus,
   VoiceCommandRule,
 } from "../types/models";
@@ -203,6 +206,24 @@ export const backend = {
     isTauriEnv()
       ? invoke<AppStatePayload>("execute_radial_slice", { sliceId })
       : browserSim.executeRadialSlice(sliceId),
+  listTriageItems: () =>
+    isTauriEnv() ? invoke<TriageItem[]>("list_triage_items") : browserSim.listTriageItems(),
+  submitTriageItem: (kind: TriageKind, title: string, details: string) =>
+    isTauriEnv()
+      ? invoke<TriageItem[]>("submit_triage_item", { kind, title, details })
+      : browserSim.submitTriageItem(kind, title, details),
+  setTriageStatus: (id: string, status: TriageStatus) =>
+    isTauriEnv()
+      ? invoke<TriageItem[]>("set_triage_status", { id, status })
+      : browserSim.setTriageStatus(id, status),
+  deleteTriageItem: (id: string) =>
+    isTauriEnv()
+      ? invoke<TriageItem[]>("delete_triage_item", { id })
+      : browserSim.deleteTriageItem(id),
+  exportAdeBatchPrompt: () =>
+    isTauriEnv()
+      ? invoke<string>("export_ade_batch_prompt")
+      : browserSim.exportAdeBatchPrompt(),
   onTelemetry: (cb: (snapshot: ControllerSnapshot) => void): Promise<UnlistenFn> =>
     isTauriEnv()
       ? listen<ControllerSnapshot>("controller-telemetry", (event) => cb(event.payload))

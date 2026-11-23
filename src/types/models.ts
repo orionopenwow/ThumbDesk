@@ -322,3 +322,17 @@ export interface AppStatePayload {
   radialMenuOpen: boolean;
   automationApiUrl: string;
 }
+
+export type TriageKind = "bug" | "feature";
+export type TriageStatus = "queued" | "approved" | "fixed";
+
+export interface TriageItem {
+  id: string;
+  kind: TriageKind;
+  title: string;
+  details: string;
+  status: TriageStatus;
+  version: string;
+  controller: string | null;
+  createdAt: string;
+}

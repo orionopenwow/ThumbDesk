@@ -118,6 +118,11 @@ pub fn run() {
             commands::update_radial_menu,
             commands::set_radial_menu_open,
             commands::execute_radial_slice,
+            commands::list_triage_items,
+            commands::submit_triage_item,
+            commands::set_triage_status,
+            commands::delete_triage_item,
+            commands::export_ade_batch_prompt,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Vibe Controller");
@@ -1236,5 +1241,33 @@ mod wave4_tests {
             find_directional_next_target(130.0, 115.0, 0.0, 1.0, &targets),
             Some((130.0, 275.0))
         );
+    }
+
+    #[test]
+    fn ade_triage_queue_submit_approve_and_batch_prompt() {
+        use crate::services::triage_queue::{TriageKind, TriageQueueService, TriageStatus};
+
+        let tmp = tempfile::tempdir().unwrap();
+        let svc = TriageQueueService::with_file(tmp.path().join("triage.json"));
+        let items = svc
+            .submit(
+                TriageKind::Bug,
+                "Stick flick too sensitive".into(),
+                "Increase flick threshold slightly".into(),
+                Some("DualSense".into()),
+            )
+            .unwrap();
+        assert_eq!(items.len(), 1);
+        let id = items[0].id.clone();
+
+        let approved = svc.set_status(&id, TriageStatus::Approved).unwrap();
+        assert_eq!(approved[0].status, TriageStatus::Approved);
+
+        let prompt = svc.build_ade_batch_prompt();
+        assert!(prompt.contains("[BUG] Stick flick too sensitive"));
+        assert!(prompt.contains("DualSense"));
+
+        let after_del = svc.delete(&id).unwrap();
+        assert!(after_del.is_empty());
     }
 }

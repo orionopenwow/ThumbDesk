@@ -116,6 +116,7 @@ pub struct AppRuntime {
     companion: CompanionService,
     updater: AppUpdateService,
     voice: VoiceModeService,
+    triage: crate::services::triage_queue::TriageQueueService,
     running: Arc<AtomicBool>,
 }
 
@@ -273,6 +274,7 @@ impl AppRuntime {
         let updater = AppUpdateService::new();
         updater.check_and_preload_async(3);
         let voice = VoiceModeService::new();
+        let triage = crate::services::triage_queue::TriageQueueService::default_service();
 
         Arc::new(Self {
             store,
@@ -283,6 +285,7 @@ impl AppRuntime {
             companion,
             updater,
             voice,
+            triage,
             running: Arc::new(AtomicBool::new(false)),
         })
     }
@@ -784,6 +787,39 @@ impl AppRuntime {
 
     pub fn open_steam_big_picture(&self) -> Result<(), String> {
         open_steam_uri("steam://open/bigpicture")
+    }
+
+    pub fn list_triage_items(&self) -> Vec<crate::services::triage_queue::TriageItem> {
+        self.triage.list()
+    }
+
+    pub fn submit_triage_item(
+        &self,
+        kind: crate::services::triage_queue::TriageKind,
+        title: String,
+        details: String,
+    ) -> Result<Vec<crate::services::triage_queue::TriageItem>, String> {
+        let controller = self.state.lock().unwrap().snapshot.name.clone();
+        self.triage.submit(kind, title, details, controller)
+    }
+
+    pub fn set_triage_status(
+        &self,
+        id: String,
+        status: crate::services::triage_queue::TriageStatus,
+    ) -> Result<Vec<crate::services::triage_queue::TriageItem>, String> {
+        self.triage.set_status(&id, status)
+    }
+
+    pub fn delete_triage_item(
+        &self,
+        id: String,
+    ) -> Result<Vec<crate::services::triage_queue::TriageItem>, String> {
+        self.triage.delete(&id)
+    }
+
+    pub fn export_ade_batch_prompt(&self) -> String {
+        self.triage.build_ade_batch_prompt()
     }
 
     pub fn update_status(&self) -> UpdateStatus {

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Battery,
+  Bug,
   CheckCircle2,
   Cpu,
   Disc,
@@ -13,6 +14,7 @@ import {
 import appIconUrl from "./assets/AppIconStudio.png";
 import { backend, isTauriEnv } from "./api/backend";
 import { ControllerWorkspace } from "./components/ControllerWorkspace";
+import { FeedbackTriageModal } from "./components/FeedbackTriageModal";
 import { HardwareLabModal } from "./components/HardwareLabModal";
 import { InspectorSidebar } from "./components/InspectorSidebar";
 import { MappingSheet } from "./components/MappingSheet";
@@ -50,6 +52,7 @@ export const App: React.FC = () => {
       demoPreset === "lab-fx" ||
       demoPreset === "lab-api"
   );
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const runAction = async (fn: () => Promise<AppStatePayload>) => {
@@ -90,6 +93,8 @@ export const App: React.FC = () => {
       if (e.key !== "Escape") return;
       if (showProfileMenu) {
         setShowProfileMenu(false);
+      } else if (showFeedbackModal) {
+        setShowFeedbackModal(false);
       } else if (showHardwareLab) {
         setShowHardwareLab(false);
       } else if (showInstaller) {
@@ -106,7 +111,7 @@ export const App: React.FC = () => {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showProfileMenu, showHardwareLab, showInstaller, editingStick, state?.radialMenuOpen]);
+  }, [showProfileMenu, showFeedbackModal, showHardwareLab, showInstaller, editingStick, state?.radialMenuOpen]);
 
   if (!state) {
     return (
@@ -197,7 +202,23 @@ export const App: React.FC = () => {
             <span className="brand-wordmark-desk">desk.</span>
           </span>
         </div>
-        <div className="win-lights" aria-label="Window controls">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            type="button"
+            className="icon-ghost-btn"
+            title="Report a bug or request a feature (ADE Batch Queue)"
+            aria-label="Report bug or request feature"
+            onClick={() => setShowFeedbackModal(true)}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              color: "var(--text-secondary)",
+            }}
+          >
+            <Bug size={14} />
+          </button>
+          <div className="win-lights" aria-label="Window controls">
           <button
             type="button"
             className="win-light win-light-yellow"
@@ -222,6 +243,7 @@ export const App: React.FC = () => {
           >
             <span>×</span>
           </button>
+          </div>
         </div>
       </div>
 
@@ -531,6 +553,13 @@ export const App: React.FC = () => {
               ? runAction(() => backend.setRadialMenuOpen(false))
               : setState((prev) => (prev ? { ...prev, radialMenuOpen: false } : prev))
           }
+        />
+      )}
+      {showFeedbackModal && (
+        <FeedbackTriageModal
+          controllerName={snapshot.name}
+          version={state.updateStatus.currentVersion}
+          onClose={() => setShowFeedbackModal(false)}
         />
       )}
     </div>

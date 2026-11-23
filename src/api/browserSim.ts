@@ -17,12 +17,27 @@ import type {
   RunningAppInfo,
   StickRoleChoice,
   StickSide,
+  TriageItem,
+  TriageKind,
+  TriageStatus,
   UpdateStatus,
   VoiceCommandRule,
 } from "../types/models";
 import { buildDemoState, getDemoPreset } from "../utils/demoState";
 
 let simState: AppStatePayload | null = null;
+let simTriage: TriageItem[] = [
+  {
+    id: "demo-1",
+    kind: "feature",
+    title: "Add custom deadzone per game profile",
+    details: "Allow separate stick deadzone slider inside per-app overrides.",
+    status: "approved",
+    version: "2.2.0",
+    controller: "Sony DualSense Wireless Controller",
+    createdAt: "ts-demo",
+  },
+];
 
 function ensureState(): AppStatePayload {
   if (!simState) {
@@ -382,6 +397,55 @@ export const browserSim = {
     const found = activeProfileMut(st).radialMenu?.find((s) => s.id === sliceId);
     if (found) st.diagnostics.lastActionStatus = `Radial: ${found.label}`;
     return cloneState();
+  },
+
+  listTriageItems: async (): Promise<TriageItem[]> => [...simTriage],
+
+  submitTriageItem: async (
+    kind: TriageKind,
+    title: string,
+    details: string
+  ): Promise<TriageItem[]> => {
+    const item: TriageItem = {
+      id: `item-${Date.now()}`,
+      kind,
+      title: title.trim(),
+      details: details.trim(),
+      status: "queued",
+      version: "2.2.0",
+      controller: ensureState().snapshot.name,
+      createdAt: `ts-${Math.floor(Date.now() / 1000)}`,
+    };
+    simTriage = [item, ...simTriage];
+    return [...simTriage];
+  },
+
+  setTriageStatus: async (id: string, status: TriageStatus): Promise<TriageItem[]> => {
+    simTriage = simTriage.map((i) => (i.id === id ? { ...i, status } : i));
+    return [...simTriage];
+  },
+
+  deleteTriageItem: async (id: string): Promise<TriageItem[]> => {
+    simTriage = simTriage.filter((i) => i.id !== id);
+    return [...simTriage];
+  },
+
+  exportAdeBatchPrompt: async (): Promise<string> => {
+    const approved = simTriage.filter((i) => i.status === "approved");
+    const list = approved.length > 0 ? approved : simTriage.filter((i) => i.status === "queued");
+    if (list.length === 0) return "No queued or approved ThumbDesk triage items to batch-fix.";
+    return [
+      "# ThumbDesk ADE Batch Auto-Fix Request",
+      "",
+      "Please fix/implement the following approved batch of items in `thumbdesk.`, run all tests, and present a summary diff for final approval:",
+      "",
+      ...list.map(
+        (i, idx) =>
+          `${idx + 1}. **[${i.kind.toUpperCase()}] ${i.title}** (v${i.version}${
+            i.controller ? ` · ${i.controller}` : ""
+          })${i.details ? `\n   - Details: ${i.details}` : ""}`
+      ),
+    ].join("\n");
   },
 
   /** Live Web Gamepad API telemetry loop with change-detection so idle controllers cause zero React re-renders! */
