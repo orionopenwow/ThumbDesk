@@ -406,6 +406,10 @@ fn default_true() -> bool {
     true
 }
 
+fn default_magic_snap_radius() -> f64 {
+    76.0
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CursorConfiguration {
@@ -427,6 +431,10 @@ pub struct CursorConfiguration {
     pub flick_boost_enabled: bool,
     #[serde(default)]
     pub zoom_gesture_enabled: bool,
+    #[serde(default = "default_true")]
+    pub magic_select_enabled: bool,
+    #[serde(default = "default_magic_snap_radius")]
+    pub magic_snap_radius: f64,
 }
 
 impl Default for CursorConfiguration {
@@ -448,6 +456,8 @@ impl Default for CursorConfiguration {
             vertical_speed_multiplier: 1.0,
             flick_boost_enabled: false,
             zoom_gesture_enabled: false,
+            magic_select_enabled: true,
+            magic_snap_radius: default_magic_snap_radius(),
         }
     }
 }

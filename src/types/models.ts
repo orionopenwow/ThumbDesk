@@ -121,6 +121,8 @@ export interface CursorConfiguration {
   verticalSpeedMultiplier: number;
   flickBoostEnabled: boolean;
   zoomGestureEnabled: boolean;
+  magicSelectEnabled?: boolean;
+  magicSnapRadius?: number;
 }
 
 export type GyroActivationMode =

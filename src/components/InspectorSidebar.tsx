@@ -154,6 +154,27 @@ export const InspectorSidebar: React.FC<InspectorSidebarProps> = ({
           onChange={(v) => patchCursor({ deadZone: v })}
         />
 
+        <div
+          className="switch-row"
+          title="Move stick freely and release to magnetically snap to nearby UI elements, or flick lightly to jump to the next control."
+          style={{ marginTop: 2 }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 500, color: "#e2e8f0" }}>Magic Select</span>
+            <span style={{ fontSize: 10.5, color: "var(--text-tertiary)" }}>
+              Snap on release · flick next
+            </span>
+          </div>
+          <button
+            type="button"
+            className={`toggle-switch ${(cursor.magicSelectEnabled ?? true) ? "on" : ""}`}
+            onClick={() =>
+              patchCursor({ magicSelectEnabled: !(cursor.magicSelectEnabled ?? true) })
+            }
+            aria-label="Toggle Magic Select"
+          />
+        </div>
+
         {showFineTuning && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 6, borderTop: "1px solid var(--border-subtle)" }}>
             <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>

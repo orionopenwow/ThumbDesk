@@ -1180,4 +1180,61 @@ mod wave4_tests {
             elapsed
         );
     }
+
+    #[test]
+    fn magic_select_snap_on_release_and_small_touch_flick() {
+        use crate::engines::magic_select_engine::{MagicSelectAction, MagicSelectEngine};
+        use crate::models::profile::CursorConfiguration;
+        use crate::platform::magic_select::{
+            find_directional_next_target, find_nearest_snap_target, MagicTarget,
+        };
+
+        // Default ON
+        let cfg = CursorConfiguration::default();
+        assert!(cfg.magic_select_enabled);
+        assert!((cfg.magic_snap_radius - 76.0).abs() < 1e-6);
+
+        // 1. Small-touch quick flick right (< 180ms) -> FlickDirectional
+        let mut engine = MagicSelectEngine::default();
+        assert_eq!(engine.update(0.0, 0.0, 0.12, 1.00, true), None);
+        assert_eq!(engine.update(0.45, 0.0, 0.12, 1.02, true), None);
+        assert_eq!(
+            engine.update(0.0, 0.0, 0.12, 1.09, true),
+            Some(MagicSelectAction::FlickDirectional(0.45, 0.0))
+        );
+
+        // 2. Normal free movement (> 180ms) then release -> SnapNearest
+        assert_eq!(engine.update(0.75, 0.2, 0.12, 2.00, true), None);
+        assert_eq!(engine.update(0.80, 0.1, 0.12, 2.35, true), None);
+        assert_eq!(
+            engine.update(0.0, 0.0, 0.12, 2.40, true),
+            Some(MagicSelectAction::SnapNearest)
+        );
+
+        // 3. Nearest snap target & directional cone selection
+        let targets = vec![
+            MagicTarget { x: 100.0, y: 100.0, width: 60.0, height: 30.0 }, // center (130, 115)
+            MagicTarget { x: 260.0, y: 100.0, width: 60.0, height: 30.0 }, // center (290, 115)
+            MagicTarget { x: 100.0, y: 260.0, width: 60.0, height: 30.0 }, // center (130, 275)
+        ];
+
+        // Cursor near first button -> snaps to (130, 115)
+        assert_eq!(
+            find_nearest_snap_target(155.0, 125.0, &targets, 76.0),
+            Some((130.0, 115.0))
+        );
+        // Cursor far away -> no unwanted snap
+        assert_eq!(find_nearest_snap_target(600.0, 600.0, &targets, 76.0), None);
+
+        // Flick right from (130, 115) -> jumps to (290, 115)
+        assert_eq!(
+            find_directional_next_target(130.0, 115.0, 1.0, 0.0, &targets),
+            Some((290.0, 115.0))
+        );
+        // Flick down from (130, 115) -> jumps to (130, 275)
+        assert_eq!(
+            find_directional_next_target(130.0, 115.0, 0.0, 1.0, &targets),
+            Some((130.0, 275.0))
+        );
+    }
 }

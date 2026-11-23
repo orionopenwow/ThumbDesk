@@ -97,6 +97,7 @@ struct SharedState {
     snapshot: ControllerSnapshot,
     cursor_motion: CursorMotionState,
     gyro_engine: crate::engines::gyro_engine::GyroEngine,
+    magic_select: crate::engines::magic_select_engine::MagicSelectEngine,
     action_engine: ActionEngine,
     is_routing_to_companion: bool,
     local_restore_pos: Option<(f64, f64)>,
@@ -243,6 +244,7 @@ impl AppRuntime {
             snapshot: ControllerSnapshot::default(),
             cursor_motion: CursorMotionState::new(),
             gyro_engine: crate::engines::gyro_engine::GyroEngine::default(),
+            magic_select: crate::engines::magic_select_engine::MagicSelectEngine::default(),
             action_engine: ActionEngine::new(),
             is_routing_to_companion: false,
             local_restore_pos: None,
@@ -471,6 +473,56 @@ impl AppRuntime {
                         } else {
                             None
                         };
+
+                        // Magic Select: free stick move -> snap on release, or small-touch quick flick -> jump to next UI target
+                        let magic_stick = match cursor_cfg.primary_stick {
+                            StickAssignment::Left => snapshot.left_stick,
+                            StickAssignment::Right => snapshot.right_stick,
+                            StickAssignment::Off => snapshot.left_stick,
+                        };
+                        let magic_active = enabled
+                            && cursor_cfg.magic_select_enabled
+                            && !guard.is_routing_to_companion
+                            && !suppress_left;
+                        if let Some(magic_action) = guard.magic_select.update(
+                            magic_stick.x,
+                            magic_stick.y,
+                            cursor_cfg.dead_zone,
+                            now_secs,
+                            magic_active,
+                        ) {
+                            let (cx, cy) = get_cursor_pos();
+                            let targets = crate::platform::magic_select::collect_foreground_targets();
+                            let next_pos = match magic_action {
+                                crate::engines::magic_select_engine::MagicSelectAction::SnapNearest => {
+                                    crate::platform::magic_select::find_nearest_snap_target(
+                                        cx,
+                                        cy,
+                                        &targets,
+                                        cursor_cfg.magic_snap_radius,
+                                    )
+                                }
+                                crate::engines::magic_select_engine::MagicSelectAction::FlickDirectional(
+                                    dx,
+                                    dy,
+                                ) => crate::platform::magic_select::find_directional_next_target(
+                                    cx, cy, dx, dy, &targets,
+                                ),
+                            };
+                            if let Some((tx, ty)) = next_pos {
+                                set_cursor_pos(tx, ty);
+                                rt.haptics
+                                    .play(ControllerVibration::SoftTap, VibrationPhase::Press);
+                                guard.diagnostics.last_action_status = match magic_action {
+                                    crate::engines::magic_select_engine::MagicSelectAction::SnapNearest => {
+                                        "Magic Select: snapped to target".to_string()
+                                    }
+                                    crate::engines::magic_select_engine::MagicSelectAction::FlickDirectional(_, _) => {
+                                        "Magic Select: flicked to next target".to_string()
+                                    }
+                                };
+                            }
+                        }
                         let combined_delta = match (stick_delta, gyro_delta) {
                             (Some((sx, sy)), Some((gx, gy))) => Some((sx + gx, sy + gy)),
                             (Some(s), None) => Some(s),
